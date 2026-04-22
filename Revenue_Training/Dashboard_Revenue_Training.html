@@ -163,21 +163,22 @@ h1.section-title::after{
 }
 .empty-state .big{font-size:3em;display:block;margin-bottom:12px;opacity:.4}
 
-.admin-ctrl{
-  margin-top:30px;padding:16px 18px;border-radius:10px;
-  background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);
+.reset-ctrl{
+  margin-top:28px;padding:14px 18px;border-radius:10px;
+  background:rgba(15,15,15,.55);border:1px solid rgba(255,255,255,.08);
 }
-.admin-ctrl h4{font-size:11px;color:#f87171;letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin-bottom:10px}
-.admin-ctrl .row{display:flex;gap:10px;flex-wrap:wrap}
-.admin-btn{
-  padding:9px 18px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.1);color:#f87171;cursor:pointer;
+.reset-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.reset-head h4{font-size:11px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-weight:800}
+.reset-hint{font-size:11px;color:var(--muted);font-style:italic;max-width:540px;line-height:1.4}
+.reset-row{display:flex;gap:10px;flex-wrap:wrap}
+.reset-btn{
+  padding:9px 16px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#ccc;cursor:pointer;
   font-family:inherit;transition:.15s;
 }
-.admin-btn:hover{background:rgba(239,68,68,.22);color:#fff}
-.admin-btn.neutral{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#aaa}
-.admin-btn.neutral:hover{background:rgba(212,168,67,.1);color:var(--gold);border-color:rgba(212,168,67,.4)}
-.admin-hint{font-size:11px;color:#888;margin-top:8px;font-style:italic}
+.reset-btn:hover{background:rgba(212,168,67,.1);color:var(--gold);border-color:rgba(212,168,67,.4)}
+.reset-btn.danger{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:#f87171}
+.reset-btn.danger:hover{background:rgba(239,68,68,.22);color:#fff;border-color:#f87171}
 
 @media (max-width:1100px){
   .layout{grid-template-columns:1fr}
@@ -231,7 +232,6 @@ const FIREBASE_CONFIG = {
 
 const PARAMS     = new URLSearchParams(location.search);
 const SESSION_ID = PARAMS.get('s') || 'revenue-training-2026';
-const IS_ADMIN   = PARAMS.get('admin') === '1';
 const BUCKET_KEY = 'revtrn_bucket_' + SESSION_ID;
 const BC_NAME    = 'revtrn_'        + SESSION_ID;
 const FB_ROOT    = `revenue_training/${SESSION_ID}`;
@@ -465,34 +465,38 @@ function renderAll(){
     <p class="sub-prompt">${q.subPrompt}</p>
     ${kpiRow}
     ${body}
-    ${IS_ADMIN ? adminPanel(q) : ''}
+    ${resetPanel(q)}
   `;
 
-  if(IS_ADMIN){
-    const b  = document.getElementById('admin-reset-one'); if(b)  b.addEventListener('click',  ()=>resetQuestion(q.key));
-    const ba = document.getElementById('admin-reset-all'); if(ba) ba.addEventListener('click', ()=>resetAll());
-  }
+  const rOne = document.getElementById('reset-one');
+  if(rOne) rOne.addEventListener('click', ()=>resetQuestion(q.key));
+  const rAll = document.getElementById('reset-all');
+  if(rAll) rAll.addEventListener('click', ()=>resetAll());
 }
 
 function emptyState(){
   return `<div class="empty-state"><span class="big">\u00b7</span>No responses yet \u2014 waiting for attendees to submit.</div>`;
 }
 
-function adminPanel(q){
+function resetPanel(q){
   return `
-    <div class="admin-ctrl">
-      <h4>Admin \u00b7 Reset data (hidden by default \u2014 enabled with ?admin=1)</h4>
-      <div class="row">
-        <button class="admin-btn" id="admin-reset-one" type="button">Reset Question ${STATE.cur+1} (${q.key})</button>
-        <button class="admin-btn" id="admin-reset-all" type="button">Reset ALL answers for session "${SESSION_ID}"</button>
+    <div class="reset-ctrl">
+      <div class="reset-head">
+        <h4>Clear responses</h4>
+        <span class="reset-hint">Use between sessions or rehearsals. Clears Firebase + local data on this browser.</span>
       </div>
-      <p class="admin-hint">Use between rehearsals. Cloud data (Firebase) and local rehearsal data on this browser are both cleared.</p>
+      <div class="reset-row">
+        <button class="reset-btn" id="reset-one" type="button">\u21BB Clear Question ${STATE.cur+1}</button>
+        <button class="reset-btn danger" id="reset-all" type="button">\u26A0 Clear ALL answers</button>
+      </div>
     </div>
   `;
 }
 
 function resetQuestion(qKey){
-  if(!confirm('Reset all responses for ' + qKey + '?')) return;
+  const idx = QUESTIONS.findIndex(x=>x.key===qKey);
+  const label = idx >= 0 ? `Question ${idx+1} (${QUESTIONS[idx].tag})` : qKey;
+  if(!confirm(`Clear all responses for ${label}?\n\nThis deletes the answers from every device. Cannot be undone.`)) return;
   if(STATE.db){ STATE.db.ref(`${FB_ROOT}/${qKey}`).remove(); }
   purgeLocal(qKey);
   STATE.data[qKey] = {};
@@ -500,7 +504,7 @@ function resetQuestion(qKey){
   renderAll();
 }
 function resetAll(){
-  if(!confirm('Reset ALL responses for session "'+SESSION_ID+'"? This cannot be undone.')) return;
+  if(!confirm(`Clear ALL responses for session "${SESSION_ID}"?\n\nEvery answer from every attendee on every device will be erased. Cannot be undone.`)) return;
   if(STATE.db){ STATE.db.ref(FB_ROOT).remove(); }
   purgeLocal(null);
   STATE.data = { q1:{}, q2:{} };

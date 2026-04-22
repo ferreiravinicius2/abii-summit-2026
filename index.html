@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0907">
+<title>ABII Summit 2026 — Session 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#d4a843;--gold-l:#f0d68a;--gold-d:#b8902f;
+  --bg:#000;--txt:#ededed;--muted:#888;
+}
+html,body{height:100%;width:100%}
+body{
+  font-family:'Montserrat','Segoe UI',Arial,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%,rgba(212,168,67,.10) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 60% at 85% 85%,rgba(212,168,67,.06) 0%,transparent 50%),
+    linear-gradient(180deg,#000 0%,#0a0907 50%,#050403 100%);
+  color:var(--txt);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 20px;
+  text-align:center;
+}
+
+.crown{
+  font-size:48px;color:var(--gold);
+  text-shadow:0 0 20px rgba(212,168,67,.5);
+  margin-bottom:16px;
+}
+
+.eyebrow{
+  color:var(--gold);
+  font-size:13px;font-weight:700;letter-spacing:.25em;
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+h1{
+  font-size:clamp(36px,7vw,64px);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.02em;
+  margin-bottom:18px;
+  background:linear-gradient(180deg,#fff 0%,#cfcfcf 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+.subtitle{
+  color:var(--muted);
+  font-size:clamp(14px,2.2vw,18px);
+  font-weight:400;
+  max-width:560px;
+  line-height:1.55;
+  margin-bottom:48px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
+  width:100%;max-width:720px;
+}
+
+.card{
+  display:flex;flex-direction:column;align-items:flex-start;
+  text-align:left;
+  padding:28px 26px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(30,24,14,.9),rgba(15,12,8,.9));
+  border:1px solid rgba(212,168,67,.22);
+  text-decoration:none;
+  color:var(--txt);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at top left,rgba(212,168,67,.14),transparent 60%);
+  opacity:.7;pointer-events:none;
+}
+.card:hover{
+  transform:translateY(-4px);
+  border-color:var(--gold);
+  box-shadow:0 16px 40px rgba(212,168,67,.15);
+}
+
+.card .ico{
+  font-size:32px;margin-bottom:14px;
+  color:var(--gold);
+}
+.card h2{
+  font-size:22px;font-weight:800;
+  margin-bottom:6px;
+  letter-spacing:-.01em;
+}
+.card p{
+  color:var(--muted);font-size:14px;line-height:1.5;
+  margin-bottom:18px;
+}
+.card .cta{
+  color:var(--gold);font-weight:700;font-size:13px;
+  letter-spacing:.12em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.card .cta::after{
+  content:"→";font-size:18px;transition:transform .2s;
+}
+.card:hover .cta::after{transform:translateX(4px)}
+
+footer{
+  margin-top:56px;
+  color:#555;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="crown">👑</div>
+
+<div class="eyebrow">ABII Summit · 2026</div>
+<h1>Commercial KPIs<br>Session 2</h1>
+<p class="subtitle">
+  Choose a view. The live dashboard reflects real-time audience interaction; the attendees page is the interactive session for participants.
+</p>
+
+<div class="cards">
+
+  <a class="card" href="live-dashboard.html">
+    <div class="ico">📊</div>
+    <h2>Live Dashboard</h2>
+    <p>Real-time results, voting, word cloud and audience analytics for facilitators.</p>
+    <span class="cta">Open dashboard</span>
+  </a>
+
+  <a class="card" href="attendees.html">
+    <div class="ico">🙋</div>
+    <h2>Attendees</h2>
+    <p>Interactive session for participants: questions, polls and live activities.</p>
+    <span class="cta">Join session</span>
+  </a>
+
+</div>
+
+<footer>AB InBev · Summit 2026</footer>
+
+</body>
+</html>

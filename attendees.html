@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0907">
+<title>ABII Summit — Interactive Session</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<!-- Firebase (compat SDK, no build step) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<!-- Deck datasets (Commercial KPIs for Interaction 13) -->
+<script src="abii-data.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --gold:#d4a843;--gold-l:#f0d68a;--gold-d:#b8902f;
+  --bg:#000;--card:#111;--border:#222;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;
+  --txt:#ededed;--muted:#888;
+  --blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
+}
+html,body{height:100%;width:100%}
+body{
+  font-family:'Montserrat','Segoe UI',Arial,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 10%,rgba(212,168,67,.10) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 60% at 85% 90%,rgba(212,168,67,.06) 0%,transparent 50%),
+    linear-gradient(180deg,#000 0%,#0a0907 50%,#050403 100%);
+  color:var(--txt);
+  min-height:100vh;
+  font-weight:400;
+  overflow-x:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* ===== STICKY HEADER ===== */
+.hdr{
+  position:sticky;top:0;z-index:50;
+  padding:10px 14px 12px;
+  background:linear-gradient(180deg,rgba(0,0,0,.96),rgba(0,0,0,.82));
+  border-bottom:1px solid rgba(212,168,67,.25);
+  backdrop-filter:blur(10px);
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.hdr::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,168,67,.45) 30%,rgba(212,168,67,.6) 50%,rgba(212,168,67,.45) 70%,transparent);
+}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hdr-brand{display:flex;align-items:center;gap:8px;min-width:0}
+.hdr-crown{width:22px;height:auto;flex-shrink:0;filter:drop-shadow(0 0 5px rgba(212,168,67,.35))}
+.hdr-titles{display:flex;flex-direction:column;line-height:1.05;min-width:0}
+.hdr-titles .corona{font-style:italic;color:var(--gold-l);font-weight:700;font-size:12px;letter-spacing:.03em}
+.hdr-titles .summit{font-size:10px;color:#fff;letter-spacing:.22em;font-weight:800;text-transform:uppercase}
+.counter{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:#000;
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  padding:5px 10px;border-radius:4px;font-weight:800;letter-spacing:.08em;
+  white-space:nowrap;flex-shrink:0;
+}
+.prog{margin-top:10px;height:4px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:3px;transition:width .35s ease}
+
+/* ===== NETWORK STATUS ===== */
+.net-chip{
+  position:fixed;top:calc(56px + env(safe-area-inset-top));right:10px;z-index:60;
+  font-size:10px;padding:3px 8px;border-radius:10px;
+  background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.4);
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  display:none;
+}
+.net-chip.offline{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.4);display:inline-block}
+.net-chip.queued{background:rgba(234,179,8,.15);color:#facc15;border-color:rgba(234,179,8,.4);display:inline-block}
+
+/* ===== MAIN CONTENT ===== */
+.main{padding:18px 14px 110px;max-width:520px;margin:0 auto}
+
+.tag-pill{
+  display:inline-block;color:#000;font-size:10px;text-transform:uppercase;
+  letter-spacing:.22em;font-weight:800;
+  padding:4px 11px;background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  border-radius:3px;margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(212,168,67,.25);
+}
+.slide-ref{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+
+h1.step-title{
+  font-size:1.55em;font-weight:900;line-height:1.15;letter-spacing:-.01em;
+  color:#fff;text-transform:uppercase;margin:4px 0 6px;
+  position:relative;padding-bottom:10px;
+}
+h1.step-title::after{
+  content:"";position:absolute;left:0;bottom:0;width:50px;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:2px;
+}
+.gold-grad{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-l) 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.prompt{
+  color:#ddd;font-size:.98em;line-height:1.5;margin-bottom:16px;
+}
+.prompt strong{color:#fff}
+.hint{font-size:.78em;color:var(--muted);font-style:italic;margin-bottom:10px;line-height:1.5}
+
+/* ===== CARDS ===== */
+.card{
+  background:linear-gradient(135deg,rgba(20,20,20,.9),rgba(10,10,10,.9));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:14px 16px;
+  margin-bottom:12px;
+  backdrop-filter:blur(6px);
+}
+.card-gold{border-color:rgba(212,168,67,.45);background:linear-gradient(135deg,rgba(212,168,67,.11),rgba(212,168,67,.03));box-shadow:0 0 14px rgba(212,168,67,.08)}
+.card-green{border-color:rgba(34,197,94,.45);background:linear-gradient(135deg,rgba(34,197,94,.09),rgba(34,197,94,.02))}
+.card-red{border-color:rgba(239,68,68,.4);background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.02))}
+
+/* ===== INPUTS ===== */
+label.lbl{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;font-weight:700}
+.inp{
+  width:100%;background:rgba(15,15,15,.85);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:14px 14px;
+  color:#fff;font-size:16px; /* 16px avoids iOS zoom */
+  outline:none;font-family:inherit;
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;appearance:none;
+}
+.inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,168,67,.15)}
+textarea.inp{min-height:90px;resize:vertical;line-height:1.4}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;min-width:48px;padding:12px 22px;
+  border-radius:10px;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid #333;background:rgba(255,255,255,.02);color:#ddd;
+  transition:transform .12s, background .2s, border-color .2s;
+  user-select:none;-webkit-user-select:none;
+}
+.btn:active{transform:scale(.97)}
+.btn-fill{
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  color:#000;border:none;
+  box-shadow:0 4px 14px rgba(212,168,67,.35);
+}
+.btn-fill:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn-ghost{background:transparent;border:1px solid rgba(212,168,67,.45);color:var(--gold)}
+.btn-wide{width:100%}
+
+.nav-row{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(0,0,0,.96),rgba(0,0,0,.78));
+  border-top:1px solid rgba(212,168,67,.25);
+  backdrop-filter:blur(10px);
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+}
+.nav-row .btn{flex:1}
+
+/* ===== QUIZ OPTIONS ===== */
+.opt{
+  display:block;width:100%;text-align:left;
+  padding:14px 16px;margin-bottom:10px;
+  background:linear-gradient(135deg,rgba(20,20,20,.85),rgba(10,10,10,.85));
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;color:#ededed;cursor:pointer;
+  font-size:15px;line-height:1.35;font-family:inherit;
+  transition:transform .12s,border-color .2s,background .2s;
+  min-height:52px;
+}
+.opt:active{transform:scale(.985)}
+.opt .letter{display:inline-block;width:22px;color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;margin-right:2px}
+.opt.sel{border-color:var(--gold);background:linear-gradient(135deg,rgba(212,168,67,.18),rgba(212,168,67,.05));box-shadow:0 0 10px rgba(212,168,67,.15)}
+.opt.correct{border-color:#22c55e;background:linear-gradient(135deg,rgba(34,197,94,.18),rgba(34,197,94,.04))}
+.opt.wrong{border-color:#ef4444;background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(239,68,68,.04))}
+.opt.disabled{pointer-events:none;opacity:.9}
+.opt .mark{float:right;font-weight:800;margin-left:8px}
+
+/* Y/N toggle */
+.yn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.yn{
+  min-height:56px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(15,15,15,.85);color:#fff;font-weight:800;font-size:15px;
+  letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+  transition:transform .12s,border-color .2s,background .2s;
+}
+.yn:active{transform:scale(.97)}
+.yn.sel-yes{border-color:#22c55e;background:linear-gradient(135deg,rgba(34,197,94,.2),rgba(34,197,94,.06));color:#4ade80}
+.yn.sel-no{border-color:#ef4444;background:linear-gradient(135deg,rgba(239,68,68,.2),rgba(239,68,68,.06));color:#f87171}
+
+/* Country chips */
+.country-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.country-btn{
+  padding:9px 14px;
+  background:linear-gradient(135deg,rgba(20,20,20,.85),rgba(10,10,10,.85));
+  border:1px solid rgba(255,255,255,.14);border-radius:22px;
+  color:#ededed;cursor:pointer;font-size:13px;font-weight:600;
+  font-family:inherit;transition:.15s;min-height:38px;
+}
+.country-btn:active{transform:scale(.97)}
+.country-btn.active{border-color:var(--gold);background:linear-gradient(135deg,rgba(212,168,67,.2),rgba(212,168,67,.08));color:var(--gold);box-shadow:0 0 10px rgba(212,168,67,.2)}
+.country-label{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.22em;margin:12px 0 4px;font-weight:800}
+
+.kpi-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;margin-top:10px;background:rgba(8,8,8,.6);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.07)}
+.kpi-table th{text-align:left;padding:9px 10px;color:#000;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-l))}
+.kpi-table td{padding:8px 10px;color:#ddd;border-bottom:1px solid rgba(255,255,255,.05)}
+.kpi-table tr:last-child td{border-bottom:none}
+.kpi-table .nm{font-weight:600;color:#fff}
+.kpi-table .num{font-family:'JetBrains Mono',monospace;font-size:11px;color:#ddd}
+
+/* Feedback card */
+.feedback{
+  margin-top:14px;padding:12px 14px;border-radius:10px;
+  border:1px solid rgba(212,168,67,.45);
+  background:linear-gradient(135deg,rgba(212,168,67,.12),rgba(212,168,67,.03));
+}
+.feedback.correct{border-color:rgba(34,197,94,.5);background:linear-gradient(135deg,rgba(34,197,94,.14),rgba(34,197,94,.03))}
+.feedback.wrong{border-color:rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.14),rgba(239,68,68,.03))}
+.feedback .head{font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.feedback.correct .head{color:#4ade80}
+.feedback.wrong .head{color:#f87171}
+.feedback:not(.correct):not(.wrong) .head{color:var(--gold)}
+.feedback p{font-size:13px;color:#ddd;line-height:1.45}
+
+/* Success state */
+.submitted{
+  text-align:center;padding:26px 18px;
+  border-radius:14px;
+  border:1px solid rgba(34,197,94,.45);
+  background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.02));
+}
+.submitted .chk{
+  width:56px;height:56px;border-radius:50%;margin:0 auto 10px;
+  background:linear-gradient(135deg,#22c55e,#4ade80);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#052e16;font-weight:900;
+  box-shadow:0 4px 18px rgba(34,197,94,.4);
+}
+.submitted h2{font-size:1.15em;color:#4ade80;margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+.submitted p{font-size:13px;color:#bbb;line-height:1.4}
+.submitted .your-answer{
+  margin-top:14px;padding:10px 12px;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:8px;
+  text-align:left;font-size:13px;color:#ddd;line-height:1.45;word-break:break-word;
+}
+
+/* Grid for multi-question screens */
+.qblock{margin-bottom:18px}
+.qblock .qnum{font-size:10px;color:var(--gold);letter-spacing:.22em;font-weight:800;text-transform:uppercase;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.qblock .qtxt{font-weight:700;color:#fff;margin-bottom:10px;font-size:15px;line-height:1.35}
+
+/* Welcome */
+.welcome-hero{
+  text-align:center;padding:30px 10px 10px;
+}
+.welcome-hero .logo{
+  width:64px;height:64px;margin:0 auto 14px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(212,168,67,.35);
+}
+.welcome-hero .logo svg{width:36px;height:auto}
+.welcome-hero h1{font-size:1.9em;font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px;letter-spacing:-.01em}
+.welcome-hero h1 .b{display:block;font-size:.55em;color:var(--gold);letter-spacing:.3em;margin-bottom:6px;font-weight:700}
+.welcome-hero p{color:#bbb;font-size:14px;line-height:1.5;margin-top:12px}
+
+.controls-hint{
+  margin-top:18px;padding:12px 14px;
+  background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.25);border-radius:10px;
+  font-size:12px;color:#ccc;line-height:1.5;
+}
+.controls-hint strong{color:var(--gold)}
+
+/* 36/86 commitment cards (interaction 16 replicates the deck slide) */
+.commit-grid{display:flex;flex-direction:column;gap:10px}
+.commit-card{padding:14px 16px;border-radius:12px;border:1px solid}
+.commit-card.stop{border-color:rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.02))}
+.commit-card.start{border-color:rgba(34,197,94,.5);background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02))}
+.commit-card.track{border-color:rgba(212,168,67,.5);background:linear-gradient(135deg,rgba(212,168,67,.1),rgba(212,168,67,.02))}
+.commit-card h3{font-size:12px;letter-spacing:.22em;font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.commit-card.stop h3{color:#f87171}
+.commit-card.start h3{color:#4ade80}
+.commit-card.track h3{color:var(--gold)}
+.commit-card .sub{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.4}
+
+/* Toast */
+.toast{
+  position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));
+  transform:translateX(-50%) translateY(20px);
+  opacity:0;pointer-events:none;
+  background:rgba(20,20,20,.97);color:#fff;
+  border:1px solid rgba(212,168,67,.45);
+  padding:10px 16px;border-radius:24px;
+  font-size:13px;font-weight:600;letter-spacing:.03em;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);
+  transition:opacity .25s,transform .25s;z-index:100;
+  max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* dot-pager */
+.dots{display:flex;gap:4px;justify-content:center;margin-top:10px;flex-wrap:wrap;max-width:320px;margin-left:auto;margin-right:auto}
+.dot{width:8px;height:8px;border-radius:50%;background:#333;transition:.2s;cursor:pointer;border:none;padding:0}
+.dot.done{background:#4a6b37}
+.dot.cur{background:var(--gold);box-shadow:0 0 8px rgba(212,168,67,.7);transform:scale(1.3)}
+
+/* Accessibility: focus rings */
+button:focus-visible,.inp:focus-visible,.opt:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+@media (max-width:360px){
+  .main{padding:16px 10px 110px}
+  h1.step-title{font-size:1.35em}
+  .opt{font-size:14px;padding:13px 14px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================= -->
+<!-- STICKY HEADER                                  -->
+<!-- ============================================= -->
+<header class="hdr" role="banner">
+  <div class="hdr-top">
+    <div class="hdr-brand">
+      <svg class="hdr-crown" viewBox="0 0 64 46" aria-hidden="true">
+        <path d="M4 38 L12 14 L18 22 L24 8 L32 24 L40 8 L46 22 L52 14 L60 38 Z" fill="#d4a843" stroke="#b8902f" stroke-width=".5"/>
+        <path d="M4 38 h56 v4 H4 z" fill="#d4a843"/>
+        <circle cx="24" cy="12" r="1.8" fill="#b8902f"/>
+        <circle cx="32" cy="8" r="2" fill="#b8902f"/>
+        <circle cx="40" cy="12" r="1.8" fill="#b8902f"/>
+      </svg>
+      <div class="hdr-titles">
+        <span class="corona">Corona</span>
+        <span class="summit">ABII Summit</span>
+      </div>
+    </div>
+    <div class="counter" id="counter" aria-live="polite">Interaction 1 / 15</div>
+  </div>
+  <div class="prog" aria-hidden="true"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+</header>
+
+<div class="net-chip" id="netChip">Offline</div>
+
+<!-- ============================================= -->
+<!-- MAIN AREA                                      -->
+<!-- ============================================= -->
+<main class="main" id="mainArea">
+  <!-- dynamically rendered -->
+</main>
+
+<!-- ============================================= -->
+<!-- BOTTOM NAV                                     -->
+<!-- ============================================= -->
+<nav class="nav-row" role="navigation" aria-label="Interaction navigation">
+  <button class="btn" id="backBtn" type="button" aria-label="Previous interaction">&larr; Back</button>
+  <button class="btn btn-fill" id="nextBtn" type="button" aria-label="Next interaction">Next &rarr;</button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// =========================================================
+// CONFIG
+// =========================================================
+
+// ---- Firebase demo config (REPLACE with your own for production) ----
+// Instructions in README.md. If Firebase fails to init (e.g. placeholder keys),
+// the app falls back to localStorage so you can still rehearse locally.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDemo-Replace-With-Your-Own-Key-Here-0000",
+  authDomain: "abii-summit-demo.firebaseapp.com",
+  databaseURL: "https://abii-summit-demo-default-rtdb.firebaseio.com",
+  projectId: "abii-summit-demo",
+  appId: "1:000000000000:web:0000000000000000000000"
+};
+
+// Session id from URL (?s=abii-2026) or default.
+const SESSION_ID = new URLSearchParams(location.search).get('s') || 'abii-2026';
+const STORAGE_KEY = 'abii_summit_' + SESSION_ID;
+
+// Cross-tab local sync channel (works when opened via same origin incl. file://)
+const BC = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('abii_' + SESSION_ID) : null;
+
+// ===== Embedded deck datasets (for interactions that mirror slides 15/86, 22/86, 74/86) =====
+// Full copy of DATA.megaBrands from abii-session2.html (Interaction 3 — Classify Brands).
+const DATA_MEGA = {"Puerto Rico":[{"brand":"Michelob Ultra","role":"Mega Brand","pi":170,"ms":16.3,"pwr":16.5},{"brand":"Corona","role":"Mega Brand","pi":176,"ms":7.3,"pwr":17.7},{"brand":"Modelo","role":"Expansion","pi":150,"ms":0.9,"pwr":8.2},{"brand":"Busch","role":"Sustain","pi":110,"ms":13,"pwr":0}],"Costa Rica":[{"brand":"Corona","role":"Mega Brand","pi":133,"ms":3.7,"pwr":16.2},{"brand":"Modelo","role":"Mega Brand","pi":111,"ms":1.1,"pwr":5.5},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0.1,"pwr":1.5},{"brand":"Busch","role":"Sustain","pi":65,"ms":0,"pwr":0},{"brand":"Natural Light","role":"Sustain","pi":0,"ms":0,"pwr":0},{"brand":"Stella Artois","role":"Expansion","pi":0,"ms":0,"pwr":0}],"New Zealand":[{"brand":"Corona","role":"Mega Brand","pi":140,"ms":5.6,"pwr":12},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0,"pwr":0}],"UAE":[{"brand":"Corona","role":"Mega Brand","pi":190,"ms":6.4,"pwr":0},{"brand":"Budweiser","role":"Expansion","pi":140,"ms":3.2,"pwr":0},{"brand":"Stella Artois","role":"Sustain","pi":160,"ms":2.2,"pwr":0}],"Israel":[{"brand":"Corona","role":"Mega Brand","pi":120,"ms":12.4,"pwr":12},{"brand":"Budweiser","role":"Expansion","pi":110,"ms":1.5,"pwr":2.3}],"Poland":[{"brand":"Corona","role":"Mega Brand","pi":239,"ms":0.7,"pwr":4.5},{"brand":"Stella Artois","role":"Expansion","pi":147,"ms":0.1,"pwr":1.2},{"brand":"Beck's","role":"Sustain","pi":126,"ms":0.1,"pwr":0.9}],"Thailand":[{"brand":"Corona","role":"Mega Brand","pi":201,"ms":0.2,"pwr":2.6},{"brand":"Budweiser","role":"Expansion","pi":126,"ms":1.3,"pwr":3},{"brand":"Hoegaarden","role":"Sustain","pi":0,"ms":0,"pwr":0}],"Philippines":[{"brand":"Corona","role":"Mega Brand","pi":160,"ms":0.1,"pwr":2.8},{"brand":"Budweiser","role":"Expansion","pi":127,"ms":0.1,"pwr":2.6}],"Romania":[{"brand":"Corona","role":"Mega Brand","pi":280,"ms":0.1,"pwr":6.1},{"brand":"Stella Artois","role":"Expansion","pi":196,"ms":0.6,"pwr":4.6},{"brand":"Beck's","role":"Sustain","pi":153,"ms":1.4,"pwr":5.2}],"Venezuela":[{"brand":"Corona","role":"Mega Brand","pi":218,"ms":2.1,"pwr":6.9},{"brand":"Budweiser","role":"Expansion","pi":147,"ms":0,"pwr":2.2},{"brand":"Modelo","role":"Expansion","pi":0,"ms":0,"pwr":0},{"brand":"Presidente","role":"Sustain","pi":150,"ms":0.1,"pwr":1.9}],"Greece":[{"brand":"Corona","role":"Mega Brand","pi":258,"ms":1,"pwr":4.4},{"brand":"Stella Artois","role":"Expansion","pi":119,"ms":0.6,"pwr":2.1}],"Croatia":[{"brand":"Corona","role":"Mega Brand","pi":0,"ms":0,"pwr":0},{"brand":"Other OB","role":"Expansion","pi":0,"ms":0,"pwr":0}]};
+
+// Full copy of DATA.smRatios (Interaction 5 — S&M Reality).
+const DATA_SM = {"Puerto Rico":{"marketType":"Sustain","totalNR":108.78,"atlPct":30.8,"btlPct":69.2,"brands":[{"brand":"Michelob Ultra","role":"Mega Brand","nr":67.06,"smDme":2.99,"ratio":0.79,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Corona","role":"Mega Brand","nr":22.13,"smDme":2.18,"ratio":1.74,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Modelo","role":"Expansion","nr":3.09,"smDme":0.47,"ratio":2.69,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":13.78,"smDme":0.35,"ratio":0.45,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Costa Rica":{"marketType":"Sustain","totalNR":33.64,"atlPct":34.8,"btlPct":65.2,"brands":[{"brand":"Corona","role":"Mega Brand","nr":15.62,"smDme":3.5,"ratio":0.96,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Modelo","role":"Mega Brand","nr":5.55,"smDme":1.91,"ratio":1.48,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Michelob Ultra","role":"Expansion","nr":2.24,"smDme":0.74,"ratio":1.42,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":4.09,"smDme":0.37,"ratio":0.39,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Natural Light","role":"Sustain","nr":3.87,"smDme":0.37,"ratio":0.41,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":1.43,"smDme":0.74,"ratio":2.22,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"New Zealand":{"marketType":"Sustain","totalNR":36.35,"atlPct":21.4,"btlPct":78.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":23.94,"smDme":2.05,"ratio":0.91,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Michelob Ultra","role":"Expansion","nr":0.8,"smDme":0.28,"ratio":3.72,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"UAE":{"marketType":"Sustain","totalNR":40,"atlPct":75.4,"btlPct":24.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":14.64,"smDme":1.39,"ratio":0.74,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":7.69,"smDme":1.05,"ratio":1.06,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Stella Artois","role":"Sustain","nr":4.55,"smDme":1.02,"ratio":1.74,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Israel":{"marketType":"Sustain","totalNR":32.6,"atlPct":97.2,"btlPct":2.8,"brands":[{"brand":"Corona","role":"Mega Brand","nr":18.11,"smDme":0.7,"ratio":0.59,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":2.05,"smDme":0.63,"ratio":4.66,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"Poland":{"marketType":"Mega","totalNR":42.78,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":32.74,"smDme":17.83,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":2.26,"smDme":1.23,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Beck's","role":"Sustain","nr":5.34,"smDme":2.91,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Thailand":{"marketType":"Mega","totalNR":17.81,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.54,"smDme":0.05,"ratio":1.71,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":6.41,"smDme":0.02,"ratio":0.49,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Hoegaarden","role":"Sustain","nr":6.16,"smDme":0.04,"ratio":1.01,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Philippines":{"marketType":"Mega","totalNR":6.36,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":3.49,"smDme":17.54,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":1.78,"smDme":8.94,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Romania":{"marketType":"Mega","totalNR":14.17,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":12.7,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Beck's","role":"Sustain","nr":0,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Venezuela":{"marketType":"Mega","totalNR":14.6,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":10.4,"smDme":0.25,"ratio":1.34,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Modelo","role":"Expansion","nr":0.82,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Presidente","role":"Sustain","nr":2.73,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Greece":{"marketType":"Image","totalNR":12.51,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":7.24,"smDme":17.41,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":3.91,"smDme":9.41,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Croatia":{"marketType":"Image","totalNR":4.64,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.1,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Other OB","role":"Expansion","nr":0.54,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"}]}};
+
+// Full copy of DATA.commKpis (Interaction 13 — full KPI table). All 13 KPI rows per country.
+// Loaded from a separate inline file to keep this file readable.
+const DATA_KPIS = window.__ABII_KPIS__ || null;
+
+// =========================================================
+// STATE
+// =========================================================
+const STATE = {
+  uuid: null,
+  cur: 0,            // current interaction index (0..15)
+  answers: {},       // { i1:{...}, i2:{...}, ... }
+  db: null,          // firebase db ref (or null if offline)
+  queue: [],         // pending writes
+  online: navigator.onLine
+};
+
+function uuidv4(){
+  // RFC4122 v4 (works without crypto.randomUUID on older browsers)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);
+  });
+}
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return {};
+    return JSON.parse(raw);
+  }catch(e){return {}}
+}
+function saveLocal(){
+  const payload = {uuid:STATE.uuid, answers:STATE.answers, cur:STATE.cur};
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
+}
+
+// Reset this device's previous responses every time the page loads.
+// Per facilitator request: reopening attendees.html must always start at Interaction 1 with no saved answers.
+// We also:
+//   • Generate a FRESH uuid so this session does not overwrite/collide with an older entry on the dashboard.
+//   • Wipe the previous uuid's rows from the shared bucket (so the dashboard doesn't keep showing stale answers
+//     from the same device). Other attendees' answers in that bucket are preserved.
+(function freshStart(){
+  const prev = loadLocal();
+  const oldUuid = prev && prev.uuid;
+  if(oldUuid){
+    try{
+      const bucketKey = 'abii_bucket_' + SESSION_ID;
+      const bucket = JSON.parse(localStorage.getItem(bucketKey) || '{}');
+      let dirty = false;
+      Object.keys(bucket).forEach(iKey=>{
+        if(bucket[iKey] && bucket[iKey][oldUuid]){
+          delete bucket[iKey][oldUuid];
+          dirty = true;
+        }
+      });
+      if(dirty) localStorage.setItem(bucketKey, JSON.stringify(bucket));
+    }catch(e){}
+    try{ if(BC) BC.postMessage({type:'reset-uuid', uuid: oldUuid}); }catch(e){}
+  }
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  STATE.uuid = uuidv4();
+  STATE.answers = {};
+  STATE.cur = 0;
+  saveLocal();
+})();
+
+// =========================================================
+// FIREBASE INIT (graceful fallback)
+// =========================================================
+function initFirebase(){
+  try{
+    if(!window.firebase) throw new Error('SDK missing');
+    // Skip init with obviously placeholder key (demo mode)
+    if(FIREBASE_CONFIG.apiKey.includes('Demo-Replace')){
+      console.info('[ABII] Firebase demo placeholder detected — running in local-only mode.');
+      return null;
+    }
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.database(app);
+    // Touch a node to validate connectivity
+    db.ref('.info/connected').on('value', snap=>{
+      STATE.online = !!snap.val();
+      updateNetChip();
+      if(STATE.online) flushQueue();
+    });
+    return db;
+  }catch(e){
+    console.warn('[ABII] Firebase init failed, running local-only:', e.message);
+    return null;
+  }
+}
+STATE.db = initFirebase();
+
+function updateNetChip(){
+  const chip = document.getElementById('netChip');
+  chip.classList.remove('offline','queued');
+  chip.style.display = 'none';
+  if(!STATE.db){
+    chip.textContent = 'Local mode';
+    chip.classList.add('queued');
+  }else if(!STATE.online){
+    chip.textContent = 'Offline — will retry';
+    chip.classList.add('offline');
+  }else if(STATE.queue.length){
+    chip.textContent = 'Syncing…';
+    chip.classList.add('queued');
+  }
+}
+window.addEventListener('online', ()=>{STATE.online=true;updateNetChip();flushQueue()});
+window.addEventListener('offline',()=>{STATE.online=false;updateNetChip()});
+
+// Queue + retry
+function enqueueWrite(path, data){
+  STATE.queue.push({path, data});
+  saveLocal();
+  updateNetChip();
+  flushQueue();
+}
+async function flushQueue(){
+  if(!STATE.db || !STATE.online || !STATE.queue.length) return;
+  const pending = STATE.queue.slice();
+  for(const item of pending){
+    try{
+      await STATE.db.ref(item.path).set(item.data);
+      STATE.queue = STATE.queue.filter(x=>x!==item);
+      saveLocal();
+    }catch(e){
+      console.warn('[ABII] write failed, will retry:', e.message);
+      break;
+    }
+  }
+  updateNetChip();
+}
+
+// =========================================================
+// SUBMIT (central API)
+// =========================================================
+function submitAnswer(iKey, payload, opts){
+  opts = opts || {};
+  const data = Object.assign({ts: Date.now(), uuid: STATE.uuid}, payload);
+  STATE.answers[iKey] = data;
+  saveLocal();
+
+  // 1) Write to shared localStorage bucket FIRST (what the dashboard reads on every poll
+  //    and on 'storage' events — must exist before we broadcast).
+  let bucketWriteOk = false;
+  try{
+    const bucketKey = 'abii_bucket_' + SESSION_ID;
+    const bucket = JSON.parse(localStorage.getItem(bucketKey) || '{}');
+    if(!bucket[iKey]) bucket[iKey] = {};
+    bucket[iKey][STATE.uuid] = data;
+    localStorage.setItem(bucketKey, JSON.stringify(bucket));
+    bucketWriteOk = true;
+  }catch(e){
+    console.warn('[ABII] shared bucket write failed:', e.message);
+  }
+
+  // 2) Instant cross-tab push (dashboard on the same origin reacts in <50ms).
+  try{
+    if(BC) BC.postMessage({type:'submit', session:SESSION_ID, iKey, uuid:STATE.uuid, data});
+  }catch(e){}
+
+  // 3) Firebase Realtime DB (authoritative when configured).
+  const path = `sessions/${SESSION_ID}/${iKey}/${STATE.uuid}`;
+  if(STATE.db && STATE.online){
+    STATE.db.ref(path).set(data).catch(()=>enqueueWrite(path,data));
+  }else{
+    enqueueWrite(path, data);
+  }
+
+  if(!opts.silent){
+    renderSlide();
+    showToast(bucketWriteOk ? 'Answer submitted' : 'Submitted (storage blocked)');
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+// =========================================================
+// INTERACTIONS DEFINITION
+// =========================================================
+
+// Countries available for country-selector interactions (mirrors abii-session2.html DATA.commKpis)
+// With indicative AC2025 / BGT2026 / LE2026 for On-Trade POCs Distributed (a hero KPI).
+// Numbers are pulled directly from the deck dataset.
+const KPI_DATA = {
+  "Venezuela":   {ac25:31495,  bgt26:17740,  le26:17894},
+  "Philippines": {ac25:11399,  bgt26:15791,  le26:15760},
+  "Thailand":    {ac25:36955,  bgt26:43237,  le26:43705},
+  "Poland":      {ac25:33139,  bgt26:33395,  le26:33497},
+  "Greece":      {ac25:224225, bgt26:99725,  le26:101478},
+  "Romania":     {ac25:41732,  bgt26:46552,  le26:45753},
+  "Croatia":     {ac25:35357,  bgt26:36550,  le26:37289},
+  "Morocco":     {ac25:5685,   bgt26:8058,   le26:8058},
+  "Portugal":    {ac25:92375,  bgt26:103851, le26:101830},
+  "Puerto Rico": {ac25:22171,  bgt26:22171,  le26:22171},
+  "Costa Rica":  {ac25:6283,   bgt26:12814,  le26:12814},
+  "New Zealand": {ac25:18048,  bgt26:24000,  le26:3200},
+  "UAE":         {ac25:0,      bgt26:0,      le26:0},
+  "Israel":      {ac25:0,      bgt26:0,      le26:0},
+  "Turkey":      {ac25:0,      bgt26:0,      le26:0}
+};
+const COUNTRY_LIST = Object.keys(KPI_DATA);
+
+function fmtNum(n){ return (n||n===0) ? Number(n).toLocaleString('en-US',{maximumFractionDigits:0}) : '—'; }
+
+// The 16 interactions — full metadata + render functions
+const INTERACTIONS = [
+  // 1 — Slide 3/86 — expectations
+  {
+    key:'i1', slide:'3 / 86', tag:'Warm-Up',
+    title:'Before we <span class="gold-grad">start</span>',
+    render(){
+      const a = STATE.answers.i1;
+      if(a) return successBlock('Your expectations are in.', `"${escapeHtml(a.text)}"`);
+      return `
+        <p class="prompt">What are <strong>your expectations</strong> for this training? Share what you want to walk away with.</p>
+        <label class="lbl" for="i1-ta">Your expectation</label>
+        <textarea class="inp" id="i1-ta" rows="4" placeholder="e.g., Learn how to allocate investment between Mega Brands and Tail…" maxlength="400"></textarea>
+        <p class="hint">Be specific. The more concrete your expectation, the more value you will capture.</p>
+        <button class="btn btn-fill btn-wide" id="i1-submit" type="button">Submit</button>
+      `;
+    },
+    bind(){
+      document.getElementById('i1-submit').addEventListener('click', ()=>{
+        const text = (document.getElementById('i1-ta').value||'').trim();
+        if(text.length < 3) return showToast('Please share at least a few words');
+        submitAnswer('i1', {text});
+      });
+    }
+  },
+
+  // 2 — Slide 12/86 — AOP knowledge quiz
+  {
+    key:'i2', slide:'12 / 86', tag:'Quiz',
+    title:'Test your <span class="gold-grad">AOP</span> knowledge',
+    render(){
+      const a = STATE.answers.i2;
+      const options = [
+        {t:'The AOP is created unilaterally by ABI headquarters', c:false},
+        {t:'The AOP only covers volume targets', c:false},
+        {t:'The AOP is a joint plan that covers volume, investment, and KPIs', c:true},
+        {t:'The AOP is optional for smaller markets', c:false}
+      ];
+      return quizBlock('Which statement about the AOP is TRUE?', options, a,
+        'The AOP is a comprehensive, joint plan between ABI and the distributor. It covers volume, NR, investment allocation (DME, S&M, Discounts), and KPI commitments. It is mandatory for all markets.');
+    },
+    bind(){ bindQuiz('i2'); }
+  },
+
+  // 3 — Slide 15/86 — Classify Your Country's Brands (Mega/Expansion/Sustain/Tail)
+  {
+    key:'i3', slide:'15 / 86', tag:'Exercise',
+    title:'Classify your country\u2019s <span class="gold-grad">brands</span>',
+    render(){
+      const a = STATE.answers.i3;
+      if(a){
+        const summary = (a.picks || []).map(p=>`${p.brand} &rarr; <strong>${p.role}</strong>${p.correct===true?' <span style="color:#4ade80">\u2713</span>':p.correct===false?` <span style="color:#f87171">\u2717 ${p.actual}</span>`:''}`).join('<br>');
+        return successBlock(`Submitted \u2014 ${a.score} / ${a.total} correct`, summary || `Country: <strong>${a.country||'\u2014'}</strong>`);
+      }
+      if(!STATE._tmp_i3) STATE._tmp_i3 = {country:null, picks:{}, checked:false};
+      const st = STATE._tmp_i3;
+      const countries = Object.keys(DATA_MEGA);
+      const brands = st.country ? DATA_MEGA[st.country] : [];
+      const roles = ['Mega Brand','Expansion','Sustain','Tail'];
+      const roleColors = {'Mega Brand':'var(--gold)','Expansion':'#3b82f6','Sustain':'#888','Tail':'#ef4444'};
+
+      let html = `
+        <p class="prompt">Look at the <strong>Price Index, Share &amp; Power</strong> data for each brand. Classify each brand into its role.</p>
+        <div class="country-label">1. Pick your country</div>
+        <div class="country-grid" role="list">
+          ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i3c="${c}">${c}</button>`).join('')}
+        </div>`;
+
+      if(st.country && brands.length){
+        html += `<div class="country-label" style="margin-top:16px">2. Classify each brand</div>`;
+        brands.forEach((b,i)=>{
+          const pick = st.picks[i];
+          const isCheckedCorrect = st.checked && pick === b.role;
+          const isCheckedWrong = st.checked && pick && pick !== b.role;
+          html += `
+            <div class="card" style="margin-bottom:10px;padding:12px 14px;${isCheckedCorrect?'border-color:rgba(34,197,94,.5);background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02))':''}${isCheckedWrong?'border-color:rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.02))':''}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <strong style="color:#fff;font-size:14px">${b.brand}</strong>
+                ${st.checked ? (pick===b.role ? '<span style="color:#4ade80;font-weight:800;font-size:12px">\u2713 CORRECT</span>' : `<span style="color:#f87171;font-weight:800;font-size:12px">\u2717 ${b.role}</span>`) : ''}
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#aaa;margin-bottom:8px">
+                <span>PI: <strong style="color:#fff">${b.pi||'\u2014'}</strong></span>
+                <span>\u2022</span>
+                <span>Share: <strong style="color:#fff">${b.ms||'\u2014'}%</strong></span>
+                <span>\u2022</span>
+                <span>Power: <strong style="color:#fff">${b.pwr||'\u2014'}</strong></span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                ${roles.map(r=>{
+                  const sel = pick === r;
+                  const bg = sel ? `background:${roleColors[r]};color:#000;border-color:${roleColors[r]}` : `border-color:${roleColors[r]};color:${roleColors[r]}`;
+                  return `<button class="btn" style="min-height:40px;font-size:11px;padding:8px 10px;${bg}" data-i3b="${i}" data-role="${r}" type="button" ${st.checked?'disabled':''}>${r}</button>`;
+                }).join('')}
+              </div>
+            </div>`;
+        });
+        const allPicked = brands.every((_,i)=>st.picks[i]);
+        if(!st.checked){
+          html += `<button class="btn btn-fill btn-wide" id="i3-check" type="button" ${!allPicked?'disabled':''} style="margin-top:10px">Check my answers</button>`;
+        } else {
+          const score = brands.filter((b,i)=>st.picks[i]===b.role).length;
+          html += `<div class="card ${score===brands.length?'card-green':'card-gold'}" style="margin-top:12px;text-align:center"><p style="font-weight:800;font-size:16px;color:#fff">${score} / ${brands.length} correct</p><p style="font-size:12px;color:#aaa;margin-top:6px">${score===brands.length?'Perfect! You nailed every classification.':'Focus on where PI \u00d7 Power meet market share.'}</p></div>`;
+          html += `<button class="btn btn-fill btn-wide" id="i3-submit" type="button" style="margin-top:10px">Submit my answers</button>`;
+        }
+      } else {
+        html += `<p class="hint" style="margin-top:12px">Pick a country to start the exercise.</p>`;
+      }
+      return html;
+    },
+    bind(){
+      if(!STATE._tmp_i3) STATE._tmp_i3 = {country:null, picks:{}, checked:false};
+      const st = STATE._tmp_i3;
+      document.querySelectorAll('[data-i3c]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          if(st.country !== btn.dataset.i3c){ st.picks = {}; st.checked = false; }
+          st.country = btn.dataset.i3c;
+          renderSlide();
+        });
+      });
+      document.querySelectorAll('[data-i3b]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          st.picks[+btn.dataset.i3b] = btn.dataset.role;
+          renderSlide();
+        });
+      });
+      const chk = document.getElementById('i3-check');
+      if(chk) chk.addEventListener('click', ()=>{ st.checked = true; renderSlide(); });
+      const sub = document.getElementById('i3-submit');
+      if(sub) sub.addEventListener('click', ()=>{
+        const brands = DATA_MEGA[st.country] || [];
+        const picks = brands.map((b,i)=>({brand:b.brand, role:st.picks[i]||null, actual:b.role, correct: st.picks[i]===b.role}));
+        const score = picks.filter(p=>p.correct).length;
+        submitAnswer('i3', {country:st.country, picks, score, total:brands.length});
+        STATE._tmp_i3 = null;
+      });
+    }
+  },
+
+  // 4 — Slide 16/86 — What makes a brand a Mega Brand?
+  {
+    key:'i4', slide:'16 / 86', tag:'Concept Quiz',
+    title:'What makes a <span class="gold-grad">Mega Brand?</span>',
+    render(){
+      const a = STATE.answers.i4;
+      const options = [
+        {t:'Highest volume in the market', c:false},
+        {t:'Highest Price Index × Brand Power combination', c:true},
+        {t:'Longest time in the market', c:false},
+        {t:'Most SKUs in the portfolio', c:false}
+      ];
+      return quizBlock('What criteria determine Mega Brand status?', options, a,
+        'Mega Brand status is determined by the combination of Price Index and Brand Power — not volume alone. A brand can have low volume but high strategic value.');
+    },
+    bind(){ bindQuiz('i4'); }
+  },
+
+  // 5 — Slide 22/86 — S&M Reality exercise (guess ratio + ideal investment per brand)
+  {
+    key:'i5', slide:'22 / 86', tag:'S&M Reality',
+    title:'S&amp;M <span class="gold-grad">reality</span> \u2014 your market',
+    render(){
+      const a = STATE.answers.i5;
+      if(a){
+        const rows = (a.guesses||[]).map(g=>`${g.brand}: ratio <strong>${g.ratio}x</strong> (actual ${g.actualRatio}x${g.ratioOk?' <span style="color:#4ade80">\u2713</span>':' <span style="color:#f87171">\u2717</span>'})`).join('<br>');
+        return successBlock(`Submitted \u2014 ${a.score} / ${a.total} brands in range`, rows || `Country: <strong>${a.country||'\u2014'}</strong>`);
+      }
+      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, guesses:{}, checked:false};
+      const st = STATE._tmp_i5;
+      const countries = Object.keys(DATA_SM);
+      const d = st.country ? DATA_SM[st.country] : null;
+      const brands = d ? d.brands.filter(b=>b.nr>0) : [];
+      const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
+
+      let html = `
+        <p class="prompt">For each brand, <strong>guess the S&amp;M/NR ratio</strong> and the <strong>ideal investment</strong> (M USD) to hit the target range for its role.</p>
+        <div class="country-label">1. Pick your country</div>
+        <div class="country-grid" role="list">
+          ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i5c="${c}">${c}</button>`).join('')}
+        </div>`;
+
+      if(d && brands.length){
+        html += `
+          <div class="country-label" style="margin-top:16px">2. ${st.country} snapshot</div>
+          <div class="card card-gold" style="padding:10px 12px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px">
+              <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">Market Type</div><div style="color:var(--gold);font-weight:800">${d.marketType}</div></div>
+              <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">ATL / BTL</div><div style="color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace">${d.atlPct}% / ${d.btlPct}%</div></div>
+              <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">Total S&amp;M+DME</div><div style="color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace">${totalInv.toFixed(2)} M</div></div>
+            </div>
+          </div>
+          <div class="country-label" style="margin-top:16px">3. Guess for each brand</div>`;
+        brands.forEach((b,i)=>{
+          const g = st.guesses[i] || {};
+          const midTarget = (b.minRatio + b.maxRatio) / 2;
+          const nrShare = b.nr / d.totalNR;
+          const idealInv = midTarget * nrShare * totalInv;
+          const rVal = parseFloat(g.ratio||0);
+          const iVal = parseFloat(g.invest||0);
+          const rDiff = Math.abs(rVal - b.ratio);
+          const iDiff = Math.abs(iVal - idealInv);
+          const rOk = st.checked && rDiff <= 0.3;
+          const iOk = st.checked && iDiff <= (idealInv * 0.25);
+          const borderCol = st.checked ? ((rOk && iOk) ? 'rgba(34,197,94,.5)' : (!rOk && !iOk) ? 'rgba(239,68,68,.5)' : 'rgba(234,179,8,.5)') : 'rgba(255,255,255,.08)';
+          const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
+          html += `
+            <div class="card" style="padding:12px 14px;margin-bottom:10px;border-color:${borderCol}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+                <div><strong style="color:#fff;font-size:14px">${b.brand}</strong> <span style="font-size:10px;color:${roleCol};font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-left:6px">${b.role}</span></div>
+                <span style="font-size:10px;color:var(--muted);letter-spacing:.1em">NR ${b.nr.toFixed(1)}M \u00b7 inv ${b.smDme.toFixed(2)}M</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+                <div>
+                  <label class="lbl" for="i5-r-${i}">Ratio guess</label>
+                  <input class="inp" id="i5-r-${i}" type="number" step="0.1" placeholder="e.g. 1.5" value="${g.ratio||''}" data-i5r="${i}" ${st.checked?'disabled':''}>
+                </div>
+                <div>
+                  <label class="lbl" for="i5-i-${i}">Ideal inv. (M)</label>
+                  <input class="inp" id="i5-i-${i}" type="number" step="0.01" placeholder="e.g. 0.50" value="${g.invest||''}" data-i5i="${i}" ${st.checked?'disabled':''}>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:6px">Target range: <strong style="color:#fff">${b.minRatio}\u2013${b.maxRatio}x</strong></div>
+              ${st.checked ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:11px">
+                  <div>Actual ratio: <strong style="color:${rOk?'#4ade80':'#f87171'}">${b.ratio.toFixed(2)}x</strong> ${rOk?'\u2713':'\u2717'}</div>
+                  <div>Correct inv.: <strong style="color:${iOk?'#4ade80':'#f87171'}">${idealInv.toFixed(2)} M</strong> ${iOk?'\u2713':'\u2717'}</div>
+                </div>` : ''}
+            </div>`;
+        });
+        const allFilled = brands.every((_,i)=>{ const g=st.guesses[i]; return g && g.ratio && g.invest; });
+        if(!st.checked){
+          html += `<button class="btn btn-fill btn-wide" id="i5-check" type="button" ${!allFilled?'disabled':''} style="margin-top:8px">Check my answers</button>`;
+        } else {
+          html += `<button class="btn btn-fill btn-wide" id="i5-submit" type="button" style="margin-top:8px">Submit my answers</button>`;
+        }
+      } else {
+        html += `<p class="hint" style="margin-top:12px">Pick a country to start the exercise.</p>`;
+      }
+      return html;
+    },
+    bind(){
+      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, guesses:{}, checked:false};
+      const st = STATE._tmp_i5;
+      document.querySelectorAll('[data-i5c]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          if(st.country !== btn.dataset.i5c){ st.guesses = {}; st.checked = false; }
+          st.country = btn.dataset.i5c;
+          renderSlide();
+        });
+      });
+      document.querySelectorAll('[data-i5r]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const i = +inp.dataset.i5r;
+          st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {ratio: inp.value});
+        });
+      });
+      document.querySelectorAll('[data-i5i]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const i = +inp.dataset.i5i;
+          st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {invest: inp.value});
+        });
+      });
+      const chk = document.getElementById('i5-check');
+      if(chk) chk.addEventListener('click', ()=>{ st.checked = true; renderSlide(); });
+      const sub = document.getElementById('i5-submit');
+      if(sub) sub.addEventListener('click', ()=>{
+        const d = DATA_SM[st.country];
+        const brands = d.brands.filter(b=>b.nr>0);
+        const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
+        const guesses = brands.map((b,i)=>{
+          const g = st.guesses[i] || {};
+          const rVal = parseFloat(g.ratio||0);
+          const iVal = parseFloat(g.invest||0);
+          const midTarget = (b.minRatio + b.maxRatio) / 2;
+          const nrShare = b.nr / d.totalNR;
+          const idealInv = midTarget * nrShare * totalInv;
+          return {
+            brand: b.brand, role: b.role,
+            ratio: rVal.toFixed(2), actualRatio: b.ratio.toFixed(2),
+            invest: iVal.toFixed(2), idealInvest: idealInv.toFixed(2),
+            ratioOk: Math.abs(rVal - b.ratio) <= 0.3,
+            investOk: Math.abs(iVal - idealInv) <= idealInv * 0.25
+          };
+        });
+        const score = guesses.filter(g=>g.ratioOk && g.investOk).length;
+        submitAnswer('i5', {country:st.country, guesses, score, total:brands.length});
+        STATE._tmp_i5 = null;
+      });
+    }
+  },
+
+  // 6 — Slide 23/86 — Investment Rules
+  {
+    key:'i6', slide:'23 / 86', tag:'Rules Quiz',
+    title:'Investment rules — <span class="gold-grad">can I?</span>',
+    render(){
+      const a = STATE.answers.i6;
+      const options = [
+        {t:'Yes, if it improves volume', c:false},
+        {t:'Yes, with Global approval', c:false},
+        {t:'No — S&M and DME are strictly for brand building and trade execution', c:true}
+      ];
+      return quizBlock('Can I use S&M or DME funds to solve logistics problems (delivery trucks, warehouse)?', options, a,
+        'S&M and DME are for brand building and trade execution only. Logistics is funded separately. Never mix the buckets.');
+    },
+    bind(){ bindQuiz('i6'); }
+  },
+
+  // 7 — Slide 28/86 — ATL/BTL split
+  {
+    key:'i7', slide:'28 / 86', tag:'Quiz',
+    title:'ATL / BTL <span class="gold-grad">split</span>',
+    render(){
+      const a = STATE.answers.i7;
+      const options = [
+        {t:'50%', c:false},
+        {t:'60%', c:false},
+        {t:'70%', c:true},
+        {t:'80%', c:false}
+      ];
+      return quizBlock('For a Mega Brand in an <strong>underdeveloped market</strong>, what is the minimum BTL allocation?', options, a,
+        '70% minimum BTL for underdeveloped markets. Consumers need to see and try the product at the POC. ATL without distribution is wasted money.');
+    },
+    bind(){ bindQuiz('i7'); }
+  },
+
+  // 8 — Slide 36/86 — No right answer, free text reflection
+  {
+    key:'i8', slide:'36 / 86', tag:'Open Reflection',
+    title:'There is no <span class="gold-grad">right answer</span>',
+    render(){
+      const a = STATE.answers.i8;
+      if(a) return successBlock('Thanks — your reflection is in.', `"${escapeHtml(a.text)}"`);
+      return `
+        <p class="prompt">Look at your own market for a moment. <strong>Where would you reallocate investment</strong> in the next 90 days — and why?</p>
+        <label class="lbl" for="i8-ta">Your answer</label>
+        <textarea class="inp" id="i8-ta" rows="5" placeholder="e.g., Pull budget from Tail brand X and redirect to coolers in the top 200 Premium On-Trade POCs…" maxlength="500"></textarea>
+        <p class="hint">No scoring. We want your honest read on the best next move.</p>
+        <button class="btn btn-fill btn-wide" id="i8-submit" type="button">Submit</button>
+      `;
+    },
+    bind(){
+      const b = document.getElementById('i8-submit');
+      if(b) b.addEventListener('click', ()=>{
+        const text = (document.getElementById('i8-ta').value||'').trim();
+        if(text.length < 3) return showToast('Please share at least a few words');
+        submitAnswer('i8', {text});
+      });
+    }
+  },
+
+  // 9 — Slide 47/86 — 2 Restaurant + 2 Off-Trade questions (no JBP)
+  {
+    key:'i9', slide:'47 / 86', tag:'Execution Check',
+    title:'Match strategy to <span class="gold-grad">channel</span>',
+    render(){
+      const a = STATE.answers.i9;
+      if(a) return successBlock('All four answers recorded.', 'Great — wait for the live reveal on the main screen.');
+      const st = STATE._tmp_i9 || {r1:null, r2:null, o1:null, o2:null};
+      // Restaurant Q1
+      const R1_opts = [
+        {t:'Cheapest price on the menu', c:false},
+        {t:'Premium placement + suggested food pairing', c:true},
+        {t:'A promotional discount on 12-packs', c:false},
+        {t:'A back-of-house pallet', c:false}
+      ];
+      const R2_opts = [
+        {t:'The bartender — who recommends it at the moment of order', c:true},
+        {t:'A radio ad playing in the background', c:false},
+        {t:'A billboard outside the restaurant', c:false},
+        {t:'The national TV campaign', c:false}
+      ];
+      const O1_opts = [
+        {t:'Back of store, near storage', c:false},
+        {t:'Store entrance — first thing shoppers see', c:true},
+        {t:'Next to the checkout counter', c:false},
+        {t:'In the frozen food aisle', c:false}
+      ];
+      const O2_opts = [
+        {t:'Only Corona Extra on shelf', c:false},
+        {t:'Corona Extra + Corona Cero + Corona Familiar together', c:true},
+        {t:'Any beer from ABI portfolio', c:false},
+        {t:'Corona + competitor brands side by side', c:false}
+      ];
+      return `
+        <p class="prompt">Four quick questions — two <strong>restaurants</strong> and two <strong>off-trade</strong>.</p>
+
+        ${multiOptBlock('R1', '1. Restaurant', 'At a premium restaurant, what is the PRIMARY execution focus for Corona?', R1_opts, st.r1)}
+        ${multiOptBlock('R2', '2. Restaurant', 'In a restaurant, who is the single most influential touchpoint for Corona selection?', R2_opts, st.r2)}
+        ${multiOptBlock('O1', '3. Off-Trade', 'Which secondary placement has the MOST impact in a supermarket?', O1_opts, st.o1)}
+        ${multiOptBlock('O2', '4. Off-Trade', 'What does "Full Family Execution" mean in Off-Trade?', O2_opts, st.o2)}
+
+        <button class="btn btn-fill btn-wide" id="i9-submit" type="button" ${(!st.r1||!st.r2||!st.o1||!st.o2)?'disabled':''}>Submit all 4</button>
+      `;
+    },
+    bind(){
+      if(!STATE._tmp_i9) STATE._tmp_i9 = {r1:null, r2:null, o1:null, o2:null};
+      document.querySelectorAll('[data-i9]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const key = btn.dataset.i9;
+          STATE._tmp_i9[key] = {idx:+btn.dataset.idx, correct:btn.dataset.correct==='1'};
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i9-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const t = STATE._tmp_i9;
+        if(!t.r1||!t.r2||!t.o1||!t.o2) return showToast('Answer all four questions');
+        submitAnswer('i9', {
+          r1:t.r1, r2:t.r2, o1:t.o1, o2:t.o2,
+          score:[t.r1,t.r2,t.o1,t.o2].filter(x=>x&&x.correct).length
+        });
+        STATE._tmp_i9 = null;
+      });
+    }
+  },
+
+  // Interaction 10 (slide 54/86 — on-trade country selector) was removed per facilitator request.
+
+  // 11 — Slide 57/86 — Corona question (rewritten) + distribution target
+  {
+    key:'i11', slide:'57 / 86', tag:'On-Trade Execution',
+    title:'Corona — <span class="gold-grad">is it executed?</span>',
+    render(){
+      const a = STATE.answers.i11;
+      if(a) return successBlock('Both answers recorded.', `Q1: <strong>${a.q1.letter}</strong>${a.q1.correct?' ✓':' ✗'} • Q2: <strong>${a.q2.letter}</strong>${a.q2.correct?' ✓':' ✗'}`);
+      const st = STATE._tmp_i11 || {q1:null, q2:null};
+      const Q1_opts = [
+        {t:'Fully executed — the brand is present and that is what matters', c:false},
+        {t:'Product only — distribution without real execution', c:true},
+        {t:'Partially executed — the cooler counts as half the job', c:false},
+        {t:'Over-executed — branded pint glass is a brand violation', c:false}
+      ];
+      const Q2_opts = [
+        {t:'25%', c:false},
+        {t:'50%', c:true},
+        {t:'75%', c:false},
+        {t:'100%', c:false}
+      ];
+      return `
+        <p class="prompt">Two questions about On-Trade execution.</p>
+        <div class="qblock">
+          <div class="qnum">Question 1 / 2 &middot; Corona</div>
+          <div class="qtxt">A Corona-branded cooler sits at the entrance of a premium bar. The bartender pours Corona into a generic pint glass — no lime, no menu mention, no upsell, no branded bucket for the table. <strong>How would you rate this execution?</strong></div>
+          ${renderOptList('i11q1', Q1_opts, st.q1)}
+        </div>
+        <div class="qblock">
+          <div class="qnum">Question 2 / 2 &middot; Distribution</div>
+          <div class="qtxt">What is the distribution target for Corona in <strong>Premium On-Trade POCs</strong>?</div>
+          ${renderOptList('i11q2', Q2_opts, st.q2)}
+        </div>
+        <button class="btn btn-fill btn-wide" id="i11-submit" type="button" ${(!st.q1||!st.q2)?'disabled':''}>Submit both answers</button>
+      `;
+    },
+    bind(){
+      if(!STATE._tmp_i11) STATE._tmp_i11 = {q1:null, q2:null};
+      document.querySelectorAll('[data-group="i11q1"],[data-group="i11q2"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const g = btn.dataset.group === 'i11q1' ? 'q1' : 'q2';
+          STATE._tmp_i11[g] = {idx:+btn.dataset.idx, letter:btn.dataset.letter, correct:btn.dataset.correct==='1'};
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i11-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const t = STATE._tmp_i11;
+        if(!t.q1||!t.q2) return showToast('Answer both questions');
+        submitAnswer('i11', {q1:t.q1, q2:t.q2, score:(t.q1.correct?1:0)+(t.q2.correct?1:0)});
+        STATE._tmp_i11 = null;
+      });
+    }
+  },
+
+  // 12 — Slide 65/86 (was 68/86 in notes) — Off-Trade Execution Check
+  {
+    key:'i12', slide:'65 / 86', tag:'Off-Trade Quiz',
+    title:'Off-Trade <span class="gold-grad">execution</span>',
+    render(){
+      const a = STATE.answers.i12;
+      const options = [
+        {t:'Back of store, near storage', c:false},
+        {t:'Store entrance — first thing shoppers see', c:true},
+        {t:'Next to the checkout counter', c:false},
+        {t:'In the frozen food aisle', c:false}
+      ];
+      return quizBlock('Which secondary placement has the <strong>MOST impact</strong> in a supermarket?', options, a,
+        'Entrance displays capture the highest traffic and create immediate brand awareness. Especially effective for launches (like Corona Cero) and seasonal promotions.');
+    },
+    bind(){ bindQuiz('i12'); }
+  },
+
+  // 13 — Slide 74/86 — country selector + full KPI table (view-only, no submission)
+  {
+    key:'i13', slide:'74 / 86', tag:'Your KPIs',
+    title:'Your country \u2014 <span class="gold-grad">your KPIs</span>',
+    viewOnly: true,
+    render(){
+      const st = STATE._tmp_i13 || {country:null};
+      const countries = DATA_KPIS ? Object.keys(DATA_KPIS) : [];
+      const cd = st.country && DATA_KPIS ? DATA_KPIS[st.country] : null;
+
+      let html = `
+        <p class="prompt">Pick <strong>your country</strong> and review the 2026 Commercial KPIs. No submission \u2014 just absorb your plan.</p>
+        <div class="country-label">1. Pick your country</div>
+        <div class="country-grid" role="list">
+          ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i13c="${c}">${c}</button>`).join('')}
+        </div>`;
+
+      if(cd){
+        const kpis = (cd.kpis||[]).filter(k=>k.hasData);
+        const fmt = (v)=>{ if(v==null||v===0) return '\u2014'; if(v>=1000) return Math.round(v).toLocaleString('en-US'); return (+v).toFixed(v<10?2:1); };
+        html += `
+          <div class="country-label" style="margin-top:16px">2. ${st.country} \u2014 Commercial KPIs (${kpis.length})</div>
+          <div class="kpi-wrap" style="overflow:hidden;border:1px solid rgba(212,168,67,.25);border-radius:10px">
+            <table class="kpi-table" style="width:100%;border-collapse:collapse;font-size:11px;background:rgba(0,0,0,.4)">
+              <thead>
+                <tr style="background:rgba(212,168,67,.08)">
+                  <th style="text-align:left;padding:8px 8px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;font-size:9px;font-weight:800">KPI</th>
+                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">BGT 26</th>
+                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">AC 25</th>
+                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">LE 26</th>
+                  <th style="text-align:center;padding:8px 4px;color:var(--gold);font-size:9px;font-weight:800">vs BGT</th>
+                </tr>
+              </thead>
+              <tbody>`;
+        kpis.forEach(k=>{
+          const pct = k.bgt26>0 ? Math.round((k.ac25/k.bgt26)*100) : null;
+          const st_ = pct===null ? '' : pct>=90?'GREEN':pct>=70?'YELLOW':'RED';
+          const col = st_==='GREEN'?'#22c55e':st_==='YELLOW'?'#eab308':st_==='RED'?'#ef4444':'#888';
+          html += `
+            <tr style="border-top:1px solid rgba(255,255,255,.05)">
+              <td style="padding:8px 8px;color:#eee">${k.name}</td>
+              <td style="padding:8px 6px;text-align:right;color:#fff;font-family:'JetBrains Mono',monospace">${fmt(k.bgt26)}</td>
+              <td style="padding:8px 6px;text-align:right;color:#ccc;font-family:'JetBrains Mono',monospace">${fmt(k.ac25)}</td>
+              <td style="padding:8px 6px;text-align:right;color:#ccc;font-family:'JetBrains Mono',monospace">${fmt(k.le26)}</td>
+              <td style="padding:8px 4px;text-align:center;color:${col};font-weight:800;font-family:'JetBrains Mono',monospace">${pct===null?'\u2014':pct+'%'}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>
+          <p class="hint" style="margin-top:10px">Tap another country to switch views. Use the navigation below to move on.</p>`;
+      } else {
+        html += `<p class="hint" style="margin-top:12px">Pick a country to view the full KPI set.</p>`;
+      }
+      return html;
+    },
+    bind(){
+      if(!STATE._tmp_i13) STATE._tmp_i13 = {country:null};
+      const st = STATE._tmp_i13;
+      document.querySelectorAll('[data-i13c]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          st.country = btn.dataset.i13c;
+          if(DATA_KPIS && DATA_KPIS[st.country]){
+            submitAnswer('i13', {country: st.country, viewed: true}, {silent:true});
+          }
+          renderSlide();
+        });
+      });
+    }
+  },
+
+  // 14 — Slide 77/86 — KPI Tracking Check
+  {
+    key:'i14', slide:'77 / 86', tag:'Framework Quiz',
+    title:'KPI tracking — <span class="gold-grad">so what?</span>',
+    render(){
+      const a = STATE.answers.i14;
+      const options = [
+        {t:'Are the results OK? — Check if 60% is Green, Yellow, or Red', c:false},
+        {t:'Do we have a plan? — Check if there is a clear action plan to close the gap', c:true},
+        {t:'Do we have the tracker? — Check if the dashboard is updated', c:false},
+        {t:'Should we lower the budget? — Reduce targets to match reality', c:false}
+      ];
+      return quizBlock('Your country has VIP POC execution at <strong>60% of budget</strong> halfway through the year. Using the "So What" framework, what is the FIRST question?',
+        options, a,
+        'The "So What" flow is: 1. Do you have a plan? → 2. Do you have the tracker? → 3. Are the results OK? If there is no plan, no tracker or corrective action will fix the result.');
+    },
+    bind(){ bindQuiz('i14'); }
+  },
+
+  // 15 — Slide 78/86 — Your commitment (free text)
+  {
+    key:'i15', slide:'78 / 86', tag:'Commitment',
+    title:'Your <span class="gold-grad">commitment</span>',
+    render(){
+      const a = STATE.answers.i15;
+      if(a) return successBlock('Your commitment is in.', `"${escapeHtml(a.text)}"`);
+      return `
+        <p class="prompt">One sentence. <strong>What will you commit to changing</strong> in your market in the next 30 days?</p>
+        <label class="lbl" for="i15-ta">Your commitment</label>
+        <textarea class="inp" id="i15-ta" rows="4" placeholder="e.g., I will rebuild the Corona KA tracker and review it weekly with my team…" maxlength="400"></textarea>
+        <p class="hint">Make it specific, measurable, and owned by you.</p>
+        <button class="btn btn-fill btn-wide" id="i15-submit" type="button">Submit</button>
+      `;
+    },
+    bind(){
+      const b = document.getElementById('i15-submit');
+      if(b) b.addEventListener('click', ()=>{
+        const text = (document.getElementById('i15-ta').value||'').trim();
+        if(text.length < 3) return showToast('Please write at least a few words');
+        submitAnswer('i15', {text});
+      });
+    }
+  },
+
+  // 16 — Slide 85/86 — STOP / START / TRACK
+  {
+    key:'i16', slide:'85 / 86', tag:'Personal Commitment Cards',
+    title:'Stop &middot; Start &middot; <span class="gold-grad">Track</span>',
+    render(){
+      const a = STATE.answers.i16;
+      if(a) return successBlock('Your 3 cards are submitted.', `
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div><strong style="color:#f87171">STOP:</strong> ${escapeHtml(a.stop)}</div>
+          <div><strong style="color:#4ade80">START:</strong> ${escapeHtml(a.start)}</div>
+          <div><strong style="color:var(--gold)">TRACK:</strong> ${escapeHtml(a.track)}</div>
+        </div>`);
+      return `
+        <p class="prompt">Three final takeaways. One line each. These will be shared on the live dashboard.</p>
+        <div class="commit-grid">
+          <div class="commit-card stop">
+            <h3>Stop</h3>
+            <p class="sub">One practice that destroys value</p>
+            <textarea class="inp" id="i16-stop"  rows="2" placeholder="e.g., Promotions outside calendar, untracked spend…" maxlength="240"></textarea>
+          </div>
+          <div class="commit-card start">
+            <h3>Start</h3>
+            <p class="sub">One investment to align to AOP this quarter</p>
+            <textarea class="inp" id="i16-start" rows="2" placeholder="e.g., Reallocate Tail brand S&M to Corona…" maxlength="240"></textarea>
+          </div>
+          <div class="commit-card track">
+            <h3>Track</h3>
+            <p class="sub">One execution KPI to own</p>
+            <textarea class="inp" id="i16-track" rows="2" placeholder="e.g., Cooler uplift per POC, price compliance %…" maxlength="240"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-fill btn-wide" id="i16-submit" type="button" style="margin-top:14px">Submit my 3 cards</button>
+      `;
+    },
+    bind(){
+      const b = document.getElementById('i16-submit');
+      if(b) b.addEventListener('click', ()=>{
+        const stop  = (document.getElementById('i16-stop').value  ||'').trim();
+        const start = (document.getElementById('i16-start').value ||'').trim();
+        const track = (document.getElementById('i16-track').value ||'').trim();
+        if(stop.length < 2 || start.length < 2 || track.length < 2){
+          return showToast('Please fill all three cards');
+        }
+        submitAnswer('i16', {stop, start, track});
+      });
+    }
+  }
+];
+
+// =========================================================
+// SHARED RENDER HELPERS
+// =========================================================
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function successBlock(title, subHtml){
+  return `
+    <div class="submitted" role="status">
+      <div class="chk">✓</div>
+      <h2>${title}</h2>
+      <p>You can relax — wait for the facilitator's next cue.</p>
+      ${subHtml ? `<div class="your-answer">${subHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderOptList(group, options, picked){
+  return options.map((o,idx)=>{
+    const letter = String.fromCharCode(65+idx);
+    const isPicked = picked && picked.idx === idx;
+    const cls = 'opt' + (isPicked ? ' sel' : '');
+    return `<button type="button" class="${cls}" data-group="${group}" data-idx="${idx}" data-letter="${letter}" data-correct="${o.c?1:0}">
+      <span class="letter">${letter}.</span> ${o.t}
+    </button>`;
+  }).join('');
+}
+
+function multiOptBlock(group, qnum, qtext, options, picked){
+  return `
+    <div class="qblock">
+      <div class="qnum">${qnum}</div>
+      <div class="qtxt">${qtext}</div>
+      ${options.map((o,idx)=>{
+        const letter = String.fromCharCode(65+idx);
+        const isPicked = picked && picked.idx === idx;
+        const cls = 'opt' + (isPicked ? ' sel' : '');
+        return `<button type="button" class="${cls}" data-i9="${group.toLowerCase()}" data-idx="${idx}" data-correct="${o.c?1:0}" data-letter="${letter}">
+          <span class="letter">${letter}.</span> ${o.t}
+        </button>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function quizBlock(questionHtml, options, answered, feedback){
+  if(answered){
+    const picked = answered.idx;
+    const isCorrect = !!answered.correct;
+    return `
+      <p class="prompt">${questionHtml}</p>
+      <div>
+        ${options.map((o,idx)=>{
+          const letter = String.fromCharCode(65+idx);
+          let cls = 'opt disabled';
+          if(o.c) cls += ' correct';
+          if(idx === picked && !o.c) cls += ' wrong';
+          if(idx === picked && o.c) cls += ' sel';
+          const mark = o.c ? '<span class="mark" style="color:#4ade80">✓</span>' : (idx===picked?'<span class="mark" style="color:#f87171">✗</span>':'');
+          return `<div class="${cls}"><span class="letter">${letter}.</span> ${o.t}${mark}</div>`;
+        }).join('')}
+      </div>
+      <div class="feedback ${isCorrect?'correct':'wrong'}">
+        <div class="head">${isCorrect?'Correct':'Not quite'}</div>
+        <p>${feedback}</p>
+      </div>
+    `;
+  }
+  const picked = STATE._tmp_quiz || {};
+  const curPick = picked[STATE.cur];
+  return `
+    <p class="prompt">${questionHtml}</p>
+    <div id="opts">
+      ${options.map((o,idx)=>{
+        const letter = String.fromCharCode(65+idx);
+        const isPicked = curPick && curPick.idx === idx;
+        const cls = 'opt' + (isPicked ? ' sel' : '');
+        return `<button type="button" class="${cls}" data-quiz-idx="${idx}" data-correct="${o.c?1:0}" data-letter="${letter}">
+          <span class="letter">${letter}.</span> ${o.t}
+        </button>`;
+      }).join('')}
+    </div>
+    <button class="btn btn-fill btn-wide" id="quiz-submit" type="button" ${!curPick?'disabled':''}>Submit answer</button>
+  `;
+}
+
+function bindQuiz(iKey){
+  if(!STATE._tmp_quiz) STATE._tmp_quiz = {};
+  document.querySelectorAll('[data-quiz-idx]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      STATE._tmp_quiz[STATE.cur] = {
+        idx: +btn.dataset.quizIdx,
+        letter: btn.dataset.letter,
+        correct: btn.dataset.correct === '1'
+      };
+      renderSlide();
+    });
+  });
+  const s = document.getElementById('quiz-submit');
+  if(s) s.addEventListener('click', ()=>{
+    const pick = STATE._tmp_quiz[STATE.cur];
+    if(!pick) return showToast('Select an answer first');
+    submitAnswer(iKey, pick);
+    if(STATE._tmp_quiz) delete STATE._tmp_quiz[STATE.cur];
+  });
+}
+
+function countryPicker(iKey, selected){
+  return `<div class="country-label">Select your country</div>
+  <div class="country-grid" role="list">
+    ${COUNTRY_LIST.map(c=>`<button type="button" role="listitem" class="country-btn ${selected===c?'active':''}" data-country="${c}" data-pick="${iKey}">${c}</button>`).join('')}
+  </div>`;
+}
+
+function countryTable(country){
+  const d = KPI_DATA[country];
+  if(!d) return '';
+  return `
+    <div class="card card-gold" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <strong style="color:#fff;font-size:15px">${country}</strong>
+        <span style="font-size:10px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;font-weight:800">On-Trade POCs</span>
+      </div>
+      <table class="kpi-table" aria-label="AC 2025 BGT 2026 LE 2026 for ${country}">
+        <tr><th>AC 2025</th><th>BGT 2026</th><th>LE 2026</th></tr>
+        <tr>
+          <td class="num">${fmtNum(d.ac25)}</td>
+          <td class="num">${fmtNum(d.bgt26)}</td>
+          <td class="num">${fmtNum(d.le26)}</td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function bindCountryPicker(iKey){
+  document.querySelectorAll('[data-pick="'+iKey+'"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      STATE['_tmp_'+iKey] = btn.dataset.country;
+      renderSlide();
+    });
+  });
+  const s = document.getElementById(iKey+'-submit');
+  if(s) s.addEventListener('click', ()=>{
+    const country = STATE['_tmp_'+iKey];
+    if(!country) return showToast('Pick a country first');
+    const d = KPI_DATA[country];
+    submitAnswer(iKey, Object.assign({country}, d));
+    delete STATE['_tmp_'+iKey];
+  });
+}
+
+// =========================================================
+// MASTER RENDER
+// =========================================================
+function renderSlide(){
+  const area = document.getElementById('mainArea');
+  const n = INTERACTIONS.length;
+
+  // Welcome screen appears BEFORE first interaction on first load.
+  // But the user opens directly to Interaction 1 per the spec; so we skip a standalone welcome.
+  const interaction = INTERACTIONS[STATE.cur];
+  if(!interaction) return;
+
+  document.getElementById('counter').textContent = `Interaction ${STATE.cur+1} / ${n}`;
+  document.getElementById('progFill').style.width = `${Math.round(((STATE.cur+1)/n)*100)}%`;
+
+  area.innerHTML = `
+    <div class="slide-ref">${interaction.tag} &middot; Slide ${interaction.slide}</div>
+    <div class="tag-pill">${interaction.tag}</div>
+    <h1 class="step-title">${interaction.title}</h1>
+    ${interaction.render()}
+  `;
+  interaction.bind && interaction.bind();
+
+  // Nav buttons
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  backBtn.disabled = (STATE.cur === 0);
+  nextBtn.disabled = (STATE.cur === n-1);
+  backBtn.style.opacity = backBtn.disabled ? '.35' : '1';
+  nextBtn.style.opacity = nextBtn.disabled ? '.35' : '1';
+
+  window.scrollTo({top:0,behavior:'smooth'});
+  saveLocal();
+}
+
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  if(STATE.cur > 0){ STATE.cur--; renderSlide(); }
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  if(STATE.cur < INTERACTIONS.length-1){ STATE.cur++; renderSlide(); }
+});
+
+// Keyboard accessibility (desktop rehearsal)
+document.addEventListener('keydown', e=>{
+  if(e.target && ['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if(e.key === 'ArrowRight' && STATE.cur < INTERACTIONS.length-1){ STATE.cur++; renderSlide(); }
+  if(e.key === 'ArrowLeft'  && STATE.cur > 0){ STATE.cur--; renderSlide(); }
+});
+
+updateNetChip();
+renderSlide();
+
+// Expose for debugging only
+window.ABII = {STATE, INTERACTIONS, SESSION_ID, FIREBASE_CONFIG};
+</script>
+</body>
+</html>

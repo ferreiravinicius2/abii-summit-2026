@@ -1,0 +1,54 @@
+# ==========================================================
+# Vercel deploy keeps only what the HTML site needs.
+# Everything below stays OUT of the Git repo.
+# ==========================================================
+
+# Heavy source / raw binaries
+*.pptx
+*.xlsx
+*.xlsb
+*.pdf
+*.zip
+*.jpeg
+*.jpg
+
+# Working / generated folders
+pdf_pages/
+media_raw/
+output/
+pipeline/
+abii-summit-session2/
+__pycache__/
+*.pyc
+
+# Python helper scripts (not needed for the static site)
+_check_m2.py
+_map.py
+inspect_pptx.py
+inspect_master.py
+inspect_slide_detail.py
+_dev-server.js
+
+# Large markdown / working docs
+DGP.md
+PROGRESS.md
+QUESTIONS.md
+METODOLOGIA_TREINAMENTO_INTERATIVO.md
+master_report.txt
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Node (if ever added)
+node_modules/
+
+# Vercel local cache
+.vercel

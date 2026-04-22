@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABII Summit — Live Dashboard (Session 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<!-- Deck datasets (Commercial KPIs for Interaction 13) -->
+<script src="abii-data.js"></script>
+
+<!-- Firebase compat + wordcloud2.js -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#d4a843;--gold-l:#f0d68a;--gold-d:#b8902f;
+  --bg:#000;--card:#111;--border:#222;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;
+  --txt:#ededed;--muted:#888;
+  --blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
+}
+body{
+  font-family:'Montserrat','Segoe UI',Arial,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%,rgba(212,168,67,.08) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 60% at 85% 85%,rgba(212,168,67,.05) 0%,transparent 50%),
+    linear-gradient(180deg,#000 0%,#0a0907 50%,#050403 100%);
+  color:var(--txt);min-height:100vh;font-weight:400;
+}
+
+/* ==== TOPBAR ==== */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 28px;position:sticky;top:0;z-index:50;
+  background:linear-gradient(180deg,rgba(0,0,0,.94),rgba(0,0,0,.8));
+  border-bottom:1px solid rgba(212,168,67,.2);
+  backdrop-filter:blur(12px);
+}
+.topbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,168,67,.35) 20%,rgba(212,168,67,.5) 50%,rgba(212,168,67,.35) 80%,transparent);
+}
+.brand-mark{display:flex;align-items:center;gap:10px}
+.brand-mark .crown{width:26px;height:auto;filter:drop-shadow(0 0 6px rgba(212,168,67,.35))}
+.brand-mark .corona{font-weight:700;letter-spacing:.05em;font-size:13px;color:#f0d68a;font-style:italic}
+.topbar .sep{color:rgba(212,168,67,.35);margin:0 10px;font-weight:300}
+.topbar .brand{color:var(--gold);font-weight:800;font-size:13px;letter-spacing:.28em;text-transform:uppercase}
+.topbar .section{color:#aaa;font-size:11px;margin-left:14px;text-transform:uppercase;letter-spacing:.15em}
+.topbar .right{display:flex;align-items:center;gap:14px}
+.summit-badge{
+  display:flex;align-items:center;gap:8px;padding:4px 12px;border-radius:4px;
+  background:linear-gradient(135deg,rgba(212,168,67,.18),rgba(212,168,67,.08));
+  border:1px solid rgba(212,168,67,.35);
+}
+.summit-badge .big{color:#fff;font-weight:800;font-size:11px;letter-spacing:.2em;line-height:1}
+.summit-badge .small{color:var(--gold);font-weight:700;font-size:9px;letter-spacing:.3em;margin-top:2px;line-height:1}
+.summit-badge .bar{width:1px;height:20px;background:rgba(212,168,67,.4);margin:0 2px}
+.summit-badge .stack{display:flex;flex-direction:column;align-items:flex-start}
+.live-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;
+  box-shadow:0 0 0 0 rgba(34,197,94,.7);
+  animation:pulse 1.6s infinite;
+}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.7)}70%{box-shadow:0 0 0 12px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.status-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;color:#aaa;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);padding:4px 12px;border-radius:4px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;
+}
+.status-chip.bad{color:#f87171;border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
+.status-chip.warn{color:#facc15;border-color:rgba(234,179,8,.35);background:rgba(234,179,8,.08)}
+
+/* ==== SECTION NAV (left sidebar) ==== */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 60px)}
+.sidenav{
+  padding:20px 14px;border-right:1px solid rgba(212,168,67,.15);
+  background:rgba(5,5,5,.7);backdrop-filter:blur(6px);
+  height:calc(100vh - 60px);position:sticky;top:60px;overflow-y:auto;
+}
+.sidenav h4{font-size:10px;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;margin-bottom:10px;font-weight:800}
+.nav-btn{
+  display:block;width:100%;text-align:left;
+  padding:8px 10px;margin-bottom:4px;
+  background:transparent;border:1px solid transparent;border-radius:6px;
+  color:#aaa;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  transition:.15s;letter-spacing:.02em;
+}
+.nav-btn:hover{color:#fff;background:rgba(212,168,67,.06);border-color:rgba(212,168,67,.2)}
+.nav-btn.active{color:var(--gold);background:rgba(212,168,67,.1);border-color:rgba(212,168,67,.45);box-shadow:0 0 10px rgba(212,168,67,.12)}
+.nav-btn .ix{display:inline-block;width:24px;color:#666;font-family:'JetBrains Mono',monospace;font-weight:700}
+.nav-btn.active .ix{color:var(--gold)}
+.nav-btn .sl{font-size:10px;color:#666;margin-left:4px;font-family:'JetBrains Mono',monospace}
+.sidenav .resp-count{
+  margin-top:18px;padding:10px 12px;
+  background:linear-gradient(135deg,rgba(212,168,67,.12),rgba(212,168,67,.03));
+  border:1px solid rgba(212,168,67,.3);border-radius:8px;
+}
+.sidenav .resp-count .lbl{font-size:10px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin-bottom:4px}
+.sidenav .resp-count .val{font-size:22px;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace}
+
+/* ==== MAIN ==== */
+.main{padding:28px 36px 60px;max-width:1400px}
+.tag-pill{display:inline-block;color:#000;font-size:11px;text-transform:uppercase;letter-spacing:.22em;font-weight:800;padding:4px 12px;background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:3px;margin-bottom:10px;box-shadow:0 2px 6px rgba(212,168,67,.25)}
+.slide-ref{font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+h1.section-title{
+  font-size:2.6em;font-weight:900;line-height:1.05;letter-spacing:-.01em;
+  color:#fff;text-transform:uppercase;margin:8px 0 8px;
+  position:relative;padding-bottom:14px;
+}
+h1.section-title::after{
+  content:"";position:absolute;left:0;bottom:0;width:72px;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:2px;
+}
+.gold-grad{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-l) 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub-prompt{color:#bbb;font-size:15px;margin-bottom:22px;line-height:1.5;max-width:900px}
+.sub-prompt strong{color:#fff}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+.card{
+  background:linear-gradient(135deg,rgba(20,20,20,.85),rgba(10,10,10,.85));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:20px 22px;margin-bottom:18px;
+  backdrop-filter:blur(8px);
+}
+.card-gold{border-color:rgba(212,168,67,.45);background:linear-gradient(135deg,rgba(212,168,67,.1),rgba(212,168,67,.03));box-shadow:0 0 16px rgba(212,168,67,.08)}
+.card h3{font-size:13px;text-transform:uppercase;letter-spacing:.16em;color:var(--gold);font-weight:800;margin-bottom:12px}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.kpi-box{
+  padding:16px 18px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(20,20,20,.9),rgba(10,10,10,.9));
+  border:1px solid rgba(255,255,255,.08);
+  position:relative;overflow:hidden;
+}
+.kpi-box::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold-l))}
+.kpi-box .lbl{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.kpi-box .val{font-size:1.8em;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace;line-height:1.05}
+.kpi-box .sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+.kpi-box.green::before{background:linear-gradient(90deg,var(--green),#4ade80)}
+.kpi-box.green .val{color:#4ade80}
+.kpi-box.red::before{background:linear-gradient(90deg,var(--red),#f87171)}
+.kpi-box.red .val{color:#f87171}
+.kpi-box.blue::before{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.kpi-box.blue .val{color:#60a5fa}
+.kpi-box.neutral::before{background:linear-gradient(90deg,#444,#666)}
+
+/* Word cloud */
+#wc-container{width:100%;min-height:320px;height:420px;border-radius:12px;border:1px solid rgba(212,168,67,.15);background:radial-gradient(ellipse at center,rgba(15,15,15,.9),rgba(5,5,5,.95));overflow:hidden}
+#wc-container canvas{width:100%!important;height:100%!important}
+
+/* Feed */
+.feed{max-height:480px;overflow-y:auto;padding-right:6px}
+.feed::-webkit-scrollbar{width:6px}
+.feed::-webkit-scrollbar-thumb{background:rgba(212,168,67,.3);border-radius:3px}
+.feed-item{
+  padding:10px 14px;margin-bottom:8px;border-radius:8px;
+  background:rgba(15,15,15,.9);border:1px solid rgba(255,255,255,.08);
+  border-left:3px solid var(--gold);
+  animation:slideIn .3s ease;
+  font-size:13.5px;line-height:1.45;color:#ddd;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.feed-item .ts{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;display:block;margin-bottom:2px;letter-spacing:.04em}
+.feed-item.commit{border-left-color:#4ade80}
+.feed-item .cm{display:block;margin-top:4px}
+.feed-item .cm strong{display:inline-block;min-width:56px;letter-spacing:.12em;font-size:10px;text-transform:uppercase}
+
+/* Bars */
+.bar-list{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:minmax(60px,1fr) 3fr 60px;gap:10px;align-items:center}
+.bar-row .lbl{font-size:13px;color:#ddd;font-weight:600}
+.bar-row .pct{font-size:13px;color:#fff;font-weight:800;text-align:right;font-family:'JetBrains Mono',monospace}
+.bar-track{height:18px;background:rgba(255,255,255,.06);border-radius:9px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:9px;transition:width .6s ease}
+.bar-fill.gold{background:linear-gradient(90deg,var(--gold),var(--gold-l))}
+.bar-fill.green{background:linear-gradient(90deg,var(--green),#4ade80)}
+.bar-fill.red{background:linear-gradient(90deg,var(--red),#f87171)}
+.bar-fill.blue{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+
+/* Table */
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:rgba(8,8,8,.5);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+th{text-align:left;padding:12px 14px;color:#000;font-size:10.5px;text-transform:uppercase;letter-spacing:.15em;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-l))}
+td{padding:10px 14px;color:#ddd;border-bottom:1px solid rgba(255,255,255,.05)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(212,168,67,.04)}
+td.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+td.bold{font-weight:700;color:#fff}
+
+.empty-state{
+  text-align:center;padding:60px 30px;border-radius:12px;
+  border:1px dashed rgba(212,168,67,.3);background:rgba(15,15,15,.4);
+  color:#888;font-size:14px;
+}
+.empty-state .big{font-size:3em;display:block;margin-bottom:12px;opacity:.4}
+
+.admin-ctrl{
+  margin-top:30px;padding:16px 18px;border-radius:10px;
+  background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3);
+}
+.admin-ctrl h4{font-size:11px;color:#f87171;letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin-bottom:10px}
+.admin-ctrl .row{display:flex;gap:10px;flex-wrap:wrap}
+.admin-btn{
+  padding:9px 18px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.1);color:#f87171;cursor:pointer;
+  font-family:inherit;transition:.15s;
+}
+.admin-btn:hover{background:rgba(239,68,68,.22);color:#fff}
+.admin-btn.neutral{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#aaa}
+.admin-btn.neutral:hover{background:rgba(212,168,67,.1);color:var(--gold);border-color:rgba(212,168,67,.4)}
+.admin-hint{font-size:11px;color:#888;margin-top:8px;font-style:italic}
+
+/* Sectional labels on bar-list */
+.section-group-label{font-size:10px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin:14px 0 8px}
+
+/* Responsive */
+@media (max-width:1100px){
+  .layout{grid-template-columns:1fr}
+  .sidenav{position:static;height:auto;border-right:none;border-bottom:1px solid rgba(212,168,67,.15)}
+  .sidenav .sn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px}
+  .main{padding:20px 18px 60px}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-mark">
+    <span class="brand">ABII 2026 Summit</span>
+    <span class="section">Live Dashboard</span>
+  </div>
+  <div class="right">
+    <div class="summit-badge">
+      <div class="stack"><span class="big">ABI</span></div>
+      <div class="bar"></div>
+      <div class="stack"><span class="big" style="color:var(--gold)">GLOBAL</span><span class="small">SUMMIT</span></div>
+    </div>
+    <span class="status-chip" id="statusChip"><span class="live-dot"></span> <span id="statusText">Connecting…</span></span>
+    <span class="status-chip" id="sessionChip"><span id="sessionText">session: abii-2026</span></span>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidenav" aria-label="Interactions">
+    <h4>Interactions</h4>
+    <div class="sn-grid" id="navList"></div>
+    <div class="resp-count">
+      <div class="lbl">Total unique attendees</div>
+      <div class="val" id="uniqueCount">0</div>
+    </div>
+  </aside>
+
+  <main class="main" id="mainArea">
+    <!-- rendered dynamically -->
+  </main>
+</div>
+
+<script>
+// =========================================================
+// CONFIG — must match attendees.html
+// =========================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDemo-Replace-With-Your-Own-Key-Here-0000",
+  authDomain: "abii-summit-demo.firebaseapp.com",
+  databaseURL: "https://abii-summit-demo-default-rtdb.firebaseio.com",
+  projectId: "abii-summit-demo",
+  appId: "1:000000000000:web:0000000000000000000000"
+};
+
+const PARAMS = new URLSearchParams(location.search);
+const SESSION_ID = PARAMS.get('s') || 'abii-2026';
+const IS_ADMIN = PARAMS.get('admin') === '1';
+const EXPECTED_ATTENDEES = parseInt(PARAMS.get('expected'),10) || 50;
+
+document.getElementById('sessionText').textContent = 'session: ' + SESSION_ID;
+
+// =========================================================
+// INTERACTIONS METADATA (mirrors attendees.html)
+// =========================================================
+const INTERACTIONS = [
+  {key:'i1',  slide:'3 / 86',  tag:'Warm-Up',              title:'Expectations',                type:'text'},
+  {key:'i2',  slide:'12 / 86', tag:'AOP Quiz',             title:'Test your AOP Knowledge',     type:'quiz'},
+  {key:'i3',  slide:'15 / 86', tag:'Brand Classification', title:'Classify Your Brands',        type:'brandClassify'},
+  {key:'i4',  slide:'16 / 86', tag:'Concept Quiz',         title:'What Makes a Mega Brand',     type:'quiz'},
+  {key:'i5',  slide:'22 / 86', tag:'S&M Reality',          title:'S&M Reality — Per Brand',     type:'smReality'},
+  {key:'i6',  slide:'23 / 86', tag:'Rules Quiz',           title:'Investment Rules',            type:'quiz'},
+  {key:'i7',  slide:'28 / 86', tag:'ATL/BTL',              title:'ATL / BTL Split',             type:'quiz'},
+  {key:'i8',  slide:'36 / 86', tag:'Reflection',           title:'There Is No Right Answer',    type:'text'},
+  {key:'i9',  slide:'47 / 86', tag:'Execution Check',      title:'Strategy × Channel',          type:'multi4'},
+  // i10 (slide 54/86 — on-trade country selector) removed per facilitator request.
+  {key:'i11', slide:'57 / 86', tag:'Corona Execution',     title:'Corona — Is It Executed?',    type:'multi2'},
+  {key:'i12', slide:'65 / 86', tag:'Off-Trade Quiz',       title:'Off-Trade Execution',         type:'quiz'},
+  {key:'i13', slide:'74 / 86', tag:'Your KPIs',            title:'Your Country — Your KPIs',    type:'kpiView'},
+  {key:'i14', slide:'77 / 86', tag:'Framework Quiz',       title:'KPI Tracking — "So What?"',   type:'quiz'},
+  {key:'i15', slide:'78 / 86', tag:'Commitment',           title:'Your Commitment',             type:'text'},
+  {key:'i16', slide:'85 / 86', tag:'Stop/Start/Track',     title:'Personal Commitment Cards',   type:'commit'}
+];
+
+// Correct-option mapping per quiz / multi interaction
+const QUIZ_META = {
+  i2:  {correct:2, options:['A','B','C','D'], labels:[
+    'Unilateral by ABI HQ', 'Volume targets only', 'Joint plan — volume, investment, KPIs', 'Optional for smaller markets']},
+  i4:  {correct:1, options:['A','B','C','D'], labels:[
+    'Highest volume', 'Highest PI × Brand Power', 'Longest time in market', 'Most SKUs']},
+  i6:  {correct:2, options:['A','B','C'], labels:[
+    'Yes if it improves volume', 'Yes with Global approval', 'No — S&M/DME are for brand & execution only']},
+  i7:  {correct:2, options:['A','B','C','D'], labels:['50%','60%','70%','80%']},
+  i12: {correct:1, options:['A','B','C','D'], labels:[
+    'Back of store', 'Store entrance — highest traffic', 'Next to checkout', 'Frozen food aisle']},
+  i14: {correct:1, options:['A','B','C','D'], labels:[
+    'Are results OK?', 'Do we have a plan?', 'Do we have the tracker?', 'Should we lower the budget?']}
+};
+
+// Multi-question interactions
+const I9_META = {
+  r1:{correct:1, options:['A','B','C','D'], labels:['Cheapest price','Premium placement + food pairing','Discount on 12-packs','Back-of-house pallet'], title:'Q1 · Restaurant — primary focus'},
+  r2:{correct:0, options:['A','B','C','D'], labels:['The bartender','A radio ad','A billboard','The national TV campaign'], title:'Q2 · Restaurant — most influential touchpoint'},
+  o1:{correct:1, options:['A','B','C','D'], labels:['Back of store','Store entrance','Next to checkout','Frozen food aisle'], title:'Q3 · Off-Trade — best secondary placement'},
+  o2:{correct:1, options:['A','B','C','D'], labels:['Only Corona Extra','Extra + Cero + Familiar together','Any ABI beer','Corona + competitors'], title:'Q4 · Off-Trade — Full Family Execution'}
+};
+
+const I11_META = {
+  q1:{correct:1, options:['A','B','C','D'], labels:['Fully executed','Product only — no real execution','Partially executed','Over-executed'], title:'Q1 · Corona execution rating'},
+  q2:{correct:1, options:['A','B','C','D'], labels:['25%','50%','75%','100%'], title:'Q2 · Premium On-Trade distribution target'}
+};
+
+// =========================================================
+// STATE + FIREBASE
+// =========================================================
+const STATE = {
+  db: null,
+  online: false,
+  cur: 0,
+  data: {}, // {i1:{uuid:{...}}, i2:{...}, ...}
+  localPoll: null
+};
+
+function setStatus(text, cls){
+  document.getElementById('statusText').textContent = text;
+  const chip = document.getElementById('statusChip');
+  chip.classList.remove('bad','warn');
+  if(cls) chip.classList.add(cls);
+}
+
+// --- LOCAL SYNC (shared bucket + BroadcastChannel + storage events) --------------
+// Always ON, regardless of Firebase. Firebase, when configured, merges on top.
+function pullLocal(){
+  // Source of truth for local mode: the shared bucket. We rebuild STATE.data from it
+  // so that deletions (freshStart / admin reset) are reflected immediately.
+  // If Firebase is connected, we also preserve its uuids by not erasing anything that
+  // isn't in the bucket — Firebase's own listener will reconcile on its next event.
+  try{
+    const bucketKey = 'abii_bucket_' + SESSION_ID;
+    const bucket = JSON.parse(localStorage.getItem(bucketKey) || '{}');
+
+    if(STATE.db){
+      // Firebase mode: additive merge only (Firebase owns deletions).
+      Object.keys(bucket).forEach(ik=>{
+        STATE.data[ik] = STATE.data[ik] || {};
+        Object.assign(STATE.data[ik], bucket[ik] || {});
+      });
+    } else {
+      // Local-only mode: bucket is authoritative. Rebuild from scratch.
+      const next = {};
+      Object.keys(bucket).forEach(ik=>{
+        next[ik] = Object.assign({}, bucket[ik] || {});
+      });
+      // Also merge in per-attendee rows as a safety net (uuids still "present on device").
+      for(let i=0;i<localStorage.length;i++){
+        const key = localStorage.key(i);
+        if(!key || !key.startsWith('abii_summit_'+SESSION_ID+'_')) continue;
+        const v = JSON.parse(localStorage.getItem(key) || '{}');
+        if(!v || !v.uuid || !v.answers) continue;
+        for(const ik of Object.keys(v.answers)){
+          next[ik] = next[ik] || {};
+          if(!next[ik][v.uuid]) next[ik][v.uuid] = v.answers[ik];
+        }
+      }
+      STATE.data = next;
+    }
+  }catch(e){
+    console.warn('[ABII] local poll error:', e.message);
+  }
+  renderAll();
+}
+
+function startLocalSync(){
+  pullLocal();
+  STATE.localPoll = setInterval(pullLocal, 1200);
+  window.addEventListener('storage', pullLocal);
+
+  try{
+    if(typeof BroadcastChannel !== 'undefined'){
+      const bc = new BroadcastChannel('abii_' + SESSION_ID);
+      bc.addEventListener('message', ev=>{
+        const m = ev.data || {};
+        if(m.type === 'submit' && m.iKey && m.uuid && m.data){
+          STATE.data[m.iKey] = STATE.data[m.iKey] || {};
+          STATE.data[m.iKey][m.uuid] = m.data;
+          renderAll();
+        } else if(m.type === 'reset'){
+          if(m.iKey){ STATE.data[m.iKey] = {}; } else { STATE.data = {}; }
+          renderAll();
+        } else if(m.type === 'reset-uuid' && m.uuid){
+          Object.keys(STATE.data).forEach(ik=>{
+            if(STATE.data[ik] && STATE.data[ik][m.uuid]) delete STATE.data[ik][m.uuid];
+          });
+          renderAll();
+        }
+      });
+      STATE.bc = bc;
+    }
+  }catch(e){
+    console.warn('[ABII] BroadcastChannel not available:', e.message);
+  }
+}
+
+function initFirebase(){
+  // Always wire the local sync layer first — this is what makes sync work on file:// and
+  // when the page is opened before any attendee connects.
+  startLocalSync();
+
+  try{
+    if(!window.firebase) throw new Error('SDK missing');
+    if(FIREBASE_CONFIG.apiKey.includes('Demo-Replace')){
+      setStatus('Local mode · no Firebase', 'warn');
+      STATE.db = null;
+      return;
+    }
+    const app = firebase.initializeApp(FIREBASE_CONFIG);
+    const db  = firebase.database(app);
+    STATE.db  = db;
+    db.ref('.info/connected').on('value', snap=>{
+      STATE.online = !!snap.val();
+      if(STATE.online){ setStatus('Live · streaming', null); }
+      else { setStatus('Reconnecting…', 'warn'); }
+    });
+    INTERACTIONS.forEach(ia=>{
+      db.ref(`sessions/${SESSION_ID}/${ia.key}`).on('value', snap=>{
+        // Merge: Firebase is authoritative for entries it knows about,
+        // but we keep local-only entries (useful during rehearsal).
+        const remote = snap.val() || {};
+        STATE.data[ia.key] = Object.assign({}, STATE.data[ia.key] || {}, remote);
+        renderAll();
+      });
+    });
+  }catch(e){
+    console.warn('[ABII] Firebase init failed, local sync continues:', e.message);
+    setStatus('Local mode · no cloud', 'warn');
+    STATE.db = null;
+  }
+}
+
+// =========================================================
+// NAV
+// =========================================================
+function renderNav(){
+  const list = document.getElementById('navList');
+  list.innerHTML = INTERACTIONS.map((ia,i)=>{
+    const n = Object.keys(STATE.data[ia.key]||{}).length;
+    return `<button class="nav-btn ${i===STATE.cur?'active':''}" data-idx="${i}" type="button">
+      <span class="ix">${String(i+1).padStart(2,'0')}.</span>${ia.title}<span class="sl">  ·  ${ia.slide}${n?`  ·  <span style="color:#4ade80;font-weight:700">${n}</span>`:''}</span>
+    </button>`;
+  }).join('');
+  list.querySelectorAll('.nav-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ STATE.cur = +b.dataset.idx; renderAll(); });
+  });
+  // Unique count across ALL interactions
+  const uuids = new Set();
+  Object.values(STATE.data).forEach(bucket=>{
+    if(!bucket) return;
+    Object.keys(bucket).forEach(u=>uuids.add(u));
+  });
+  document.getElementById('uniqueCount').textContent = uuids.size;
+}
+
+// =========================================================
+// SECTION RENDERERS
+// =========================================================
+function renderAll(){
+  renderNav();
+  const ia  = INTERACTIONS[STATE.cur];
+  const bucket = STATE.data[ia.key] || {};
+  const entries = Object.entries(bucket);
+  const n = entries.length;
+  const pctResp = EXPECTED_ATTENDEES>0 ? Math.min(100, Math.round((n/EXPECTED_ATTENDEES)*100)) : 0;
+
+  let content = '';
+  switch(ia.type){
+    case 'text':           content = renderText(ia, entries); break;
+    case 'quiz':           content = renderQuiz(ia, entries); break;
+    case 'yesno2':         content = renderYesNo2(ia, entries); break;
+    case 'multi4':         content = renderMulti(ia, entries, I9_META,  ['r1','r2','o1','o2']); break;
+    case 'multi2':         content = renderMulti(ia, entries, I11_META, ['q1','q2']); break;
+    case 'country':        content = renderCountry(ia, entries); break;
+    case 'brandClassify':  content = renderBrandClassify(ia, entries); break;
+    case 'smReality':      content = renderSmReality(ia, entries); break;
+    case 'kpiView':        content = renderKpiView(ia, entries); break;
+    case 'commit':         content = renderCommit(ia, entries); break;
+    default:               content = emptyState();
+  }
+
+  const respBox = `
+    <div class="kpi-row">
+      <div class="kpi-box"><div class="lbl">Responded</div><div class="val">${n}</div><div class="sub">of ${EXPECTED_ATTENDEES} expected</div></div>
+      <div class="kpi-box ${pctResp>=60?'green':pctResp>=30?'blue':'neutral'}"><div class="lbl">Response rate</div><div class="val">${pctResp}<span style="font-size:.6em">%</span></div></div>
+      ${(ia.type==='quiz'||ia.type==='multi2'||ia.type==='multi4') ? renderCorrectKpi(ia, entries) : ''}
+    </div>
+  `;
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="slide-ref">${ia.tag} &middot; Slide ${ia.slide} &middot; Interaction ${STATE.cur+1} / ${INTERACTIONS.length}</div>
+    <div class="tag-pill">${ia.tag}</div>
+    <h1 class="section-title">${ia.title.replace(/—/g,'<span class="gold-grad">—</span>')}</h1>
+    ${respBox}
+    ${n === 0 ? emptyState() : content}
+    ${IS_ADMIN ? adminPanel(ia) : ''}
+  `;
+
+  // Admin binds
+  if(IS_ADMIN){
+    const b = document.getElementById('admin-reset-one');
+    if(b) b.addEventListener('click', ()=>resetInteraction(ia.key));
+    const ball = document.getElementById('admin-reset-all');
+    if(ball) ball.addEventListener('click', ()=>resetAll());
+  }
+}
+
+function emptyState(){
+  return `<div class="empty-state"><span class="big">·</span>No responses yet — waiting for attendees to submit.</div>`;
+}
+
+function renderCorrectKpi(ia, entries){
+  let correctCount = 0, total = entries.length;
+  if(ia.type === 'quiz'){
+    correctCount = entries.filter(([,v])=>v && v.correct).length;
+  } else if(ia.type === 'multi2' || ia.type === 'multi4'){
+    // Use score / max
+    const maxScore = ia.type === 'multi2' ? 2 : 4;
+    let totalScore = 0;
+    entries.forEach(([,v])=>{ totalScore += (v && typeof v.score === 'number') ? v.score : 0; });
+    const pctAvg = total ? Math.round((totalScore/(total*maxScore))*100) : 0;
+    return `<div class="kpi-box ${pctAvg>=70?'green':pctAvg>=40?'blue':'red'}"><div class="lbl">Avg. correct</div><div class="val">${pctAvg}<span style="font-size:.6em">%</span></div><div class="sub">${totalScore} / ${total*maxScore} answers right</div></div>`;
+  }
+  const pctCorrect = total ? Math.round((correctCount/total)*100) : 0;
+  return `<div class="kpi-box ${pctCorrect>=70?'green':pctCorrect>=40?'blue':'red'}"><div class="lbl">% correct</div><div class="val">${pctCorrect}<span style="font-size:.6em">%</span></div><div class="sub">${correctCount} / ${total} correct</div></div>`;
+}
+
+// ---------- TEXT (free-text) ----------
+function renderText(ia, entries){
+  const items = entries
+    .filter(([,v])=>v && v.text)
+    .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  const words = items.map(([,v])=>v.text).join(' ');
+  return `
+    <div class="grid2">
+      <div>
+        <div class="card"><h3>Word cloud</h3>
+          <div id="wc-container" aria-label="Word cloud of responses"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card"><h3>Live feed &middot; ${items.length}</h3>
+          <div class="feed" id="feed">
+            ${items.map(([uuid,v])=>`<div class="feed-item"><span class="ts">${tsFmt(v.ts)}</span>${escapeHtml(v.text)}</div>`).join('') || emptyState()}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- QUIZ (single MC) ----------
+function renderQuiz(ia, entries){
+  const meta = QUIZ_META[ia.key];
+  if(!meta) return '<div class="card">Config missing</div>';
+  const counts = new Array(meta.options.length).fill(0);
+  entries.forEach(([,v])=>{
+    if(v && typeof v.idx === 'number' && v.idx >= 0 && v.idx < counts.length) counts[v.idx]++;
+  });
+  const total = entries.length;
+  return `
+    <div class="card">
+      <h3>Distribution of answers</h3>
+      <div class="bar-list">
+        ${meta.labels.map((lbl,i)=>{
+          const c = counts[i];
+          const pct = total ? Math.round((c/total)*100) : 0;
+          const isCorrect = i === meta.correct;
+          return `
+            <div class="bar-row">
+              <div class="lbl">${meta.options[i]}. ${isCorrect?'<span style="color:#4ade80;font-weight:800">✓</span> ':''}${escapeHtml(lbl)}</div>
+              <div class="bar-track"><div class="bar-fill ${isCorrect?'green':'gold'}" style="width:${pct}%"></div></div>
+              <div class="pct">${c} &middot; ${pct}%</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ---------- YES/NO (2 questions, Interaction 3) ----------
+function renderYesNo2(ia, entries){
+  let megaYes=0, megaNo=0, expYes=0, expNo=0;
+  entries.forEach(([,v])=>{
+    if(!v) return;
+    if(v.mega==='Yes') megaYes++; else if(v.mega==='No') megaNo++;
+    if(v.expansion==='Yes') expYes++; else if(v.expansion==='No') expNo++;
+  });
+  const tot = entries.length;
+  function pct(x){ return tot?Math.round((x/tot)*100):0; }
+  return `
+    <div class="grid2">
+      <div class="card">
+        <h3>Do you know your Mega Brand?</h3>
+        <div class="bar-list">
+          <div class="bar-row"><div class="lbl">Yes</div><div class="bar-track"><div class="bar-fill green" style="width:${pct(megaYes)}%"></div></div><div class="pct">${megaYes} &middot; ${pct(megaYes)}%</div></div>
+          <div class="bar-row"><div class="lbl">No</div><div class="bar-track"><div class="bar-fill red" style="width:${pct(megaNo)}%"></div></div><div class="pct">${megaNo} &middot; ${pct(megaNo)}%</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Do you know your Expansion?</h3>
+        <div class="bar-list">
+          <div class="bar-row"><div class="lbl">Yes</div><div class="bar-track"><div class="bar-fill green" style="width:${pct(expYes)}%"></div></div><div class="pct">${expYes} &middot; ${pct(expYes)}%</div></div>
+          <div class="bar-row"><div class="lbl">No</div><div class="bar-track"><div class="bar-fill red" style="width:${pct(expNo)}%"></div></div><div class="pct">${expNo} &middot; ${pct(expNo)}%</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- MULTI (Interaction 9 & 11) ----------
+function renderMulti(ia, entries, meta, keys){
+  const blocks = keys.map(k=>{
+    const qm = meta[k];
+    const counts = new Array(qm.options.length).fill(0);
+    entries.forEach(([,v])=>{
+      const pick = v && v[k];
+      if(pick && typeof pick.idx === 'number' && pick.idx >= 0 && pick.idx < counts.length) counts[pick.idx]++;
+    });
+    const tot = entries.length;
+    return `
+      <div class="card">
+        <h3>${escapeHtml(qm.title)}</h3>
+        <div class="bar-list">
+          ${qm.labels.map((lbl,i)=>{
+            const c = counts[i];
+            const pct = tot?Math.round((c/tot)*100):0;
+            const ok = i === qm.correct;
+            return `<div class="bar-row">
+              <div class="lbl">${qm.options[i]}. ${ok?'<span style="color:#4ade80;font-weight:800">✓</span> ':''}${escapeHtml(lbl)}</div>
+              <div class="bar-track"><div class="bar-fill ${ok?'green':'gold'}" style="width:${pct}%"></div></div>
+              <div class="pct">${c} &middot; ${pct}%</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+  return `<div class="${keys.length>=3?'grid2':''}">${blocks}</div>`;
+}
+
+// ---------- COUNTRY SELECTOR (Interaction 10 & 13) ----------
+const COUNTRY_LIST_ORDER = ['Venezuela','Philippines','Thailand','Poland','Greece','Romania','Croatia','Morocco','Portugal','Puerto Rico','Costa Rica','New Zealand','UAE','Israel','Turkey'];
+function renderCountry(ia, entries){
+  // Summed AC25, BGT26, LE26 across all responses
+  let sAc=0, sBg=0, sLe=0;
+  const byCountry = {};
+  entries.forEach(([,v])=>{
+    if(!v || !v.country) return;
+    byCountry[v.country] = (byCountry[v.country]||0) + 1;
+    sAc += (+v.ac25)||0;
+    sBg += (+v.bgt26)||0;
+    sLe += (+v.le26)||0;
+  });
+  const selectedCountries = Object.keys(byCountry);
+  const rows = COUNTRY_LIST_ORDER
+    .filter(c=>byCountry[c])
+    .map(c=>`<tr><td class="bold">${c}</td><td class="mono">${byCountry[c]}</td></tr>`)
+    .join('');
+
+  return `
+    <div class="grid2">
+      <div>
+        <div class="card card-gold">
+          <h3 style="color:var(--gold)">Summed across ${selectedCountries.length} countries</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+            <div class="kpi-box blue"><div class="lbl">AC 2025</div><div class="val">${fmtNum(sAc)}</div><div class="sub">On-Trade POCs distributed</div></div>
+            <div class="kpi-box"><div class="lbl">BGT 2026</div><div class="val" style="color:var(--gold)">${fmtNum(sBg)}</div><div class="sub">Target</div></div>
+            <div class="kpi-box green"><div class="lbl">LE 2026</div><div class="val">${fmtNum(sLe)}</div><div class="sub">Latest estimate</div></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic">Aggregated from ${entries.length} attendee submission${entries.length===1?'':'s'}. Use this to reveal the "Summed" view while presenting.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Countries represented</h3>
+          ${rows ? `<table><tr><th>Country</th><th># attendees</th></tr>${rows}</table>` : emptyState()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- BRAND CLASSIFY (Interaction 3 — mirrors slide 15/86) ----------
+function renderBrandClassify(ia, entries){
+  const valid = entries.filter(([,v])=>v && v.country && Array.isArray(v.picks));
+  if(!valid.length) return emptyState();
+
+  // Aggregate per-country scores
+  const byCountry = {};
+  valid.forEach(([,v])=>{
+    if(!byCountry[v.country]) byCountry[v.country] = {n:0, totalScore:0, totalQs:0, picks:{}};
+    const c = byCountry[v.country];
+    c.n++;
+    c.totalScore += v.score || 0;
+    c.totalQs += v.total || 0;
+    (v.picks||[]).forEach(p=>{
+      if(!p || !p.brand || !p.role) return;
+      if(!c.picks[p.brand]) c.picks[p.brand] = {};
+      c.picks[p.brand][p.role] = (c.picks[p.brand][p.role]||0) + 1;
+    });
+  });
+
+  const roleColors = {'Mega Brand':'var(--gold)','Expansion':'#3b82f6','Sustain':'#888','Tail':'#ef4444'};
+  const totalAttempts = valid.length;
+  const totalScore = valid.reduce((s,[,v])=>s+(v.score||0),0);
+  const totalQs = valid.reduce((s,[,v])=>s+(v.total||0),0);
+  const avgPct = totalQs ? Math.round((totalScore/totalQs)*100) : 0;
+
+  let html = `<div class="grid2">
+    <div class="card">
+      <h3>Per-country accuracy</h3>
+      <p class="help">${totalAttempts} attendees across ${Object.keys(byCountry).length} countries \u00b7 average <strong style="color:${avgPct>=70?'#4ade80':avgPct>=40?'#60a5fa':'#f87171'}">${avgPct}%</strong> correct</p>
+      <table class="mini-table" style="margin-top:10px">
+        <thead><tr><th>Country</th><th style="text-align:right">Attendees</th><th style="text-align:right">Avg. correct</th></tr></thead>
+        <tbody>`;
+  Object.entries(byCountry).sort((a,b)=>b[1].n-a[1].n).forEach(([country,c])=>{
+    const pct = c.totalQs ? Math.round((c.totalScore/c.totalQs)*100) : 0;
+    const col = pct>=70?'#4ade80':pct>=40?'#60a5fa':'#f87171';
+    html += `<tr><td>${escapeHtml(country)}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace">${c.n}</td><td style="text-align:right;color:${col};font-weight:800">${pct}%</td></tr>`;
+  });
+  html += `</tbody></table></div>
+    <div class="card">
+      <h3>Brand-level classifications</h3>
+      <p class="help">How attendees classified each brand, across all countries.</p>
+      <div style="margin-top:10px;max-height:420px;overflow:auto">`;
+  Object.entries(byCountry).forEach(([country,c])=>{
+    html += `<div style="margin-bottom:14px"><div style="color:var(--gold);font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">${escapeHtml(country)}</div>`;
+    Object.entries(c.picks).forEach(([brand, roleCounts])=>{
+      const total = Object.values(roleCounts).reduce((a,b)=>a+b,0);
+      const bars = Object.entries(roleColors).map(([role,col])=>{
+        const n = roleCounts[role]||0;
+        const pct = total ? (n/total)*100 : 0;
+        return `<div style="flex:${pct||0.1};background:${col};height:14px;${pct>0?'':'opacity:.1'}" title="${role}: ${n}"></div>`;
+      }).join('');
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px">
+        <div style="width:130px;color:#ddd">${escapeHtml(brand)}</div>
+        <div style="flex:1;display:flex;border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,.08)">${bars}</div>
+        <div style="width:30px;text-align:right;color:var(--muted);font-family:'JetBrains Mono',monospace">${total}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div></div></div>`;
+
+  // Legend
+  html += `<div class="card" style="margin-top:12px">
+    <h3 style="margin-bottom:8px">Legend</h3>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px">
+      ${Object.entries(roleColors).map(([r,c])=>`<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;background:${c};border-radius:2px"></span>${r}</span>`).join('')}
+    </div>
+  </div>`;
+  return html;
+}
+
+// ---------- S&M REALITY (Interaction 5 — mirrors slide 22/86) ----------
+function renderSmReality(ia, entries){
+  const valid = entries.filter(([,v])=>v && v.country && Array.isArray(v.guesses));
+  if(!valid.length) return emptyState();
+
+  // Aggregate ratio accuracy per brand/country
+  const byCountry = {};
+  valid.forEach(([,v])=>{
+    if(!byCountry[v.country]) byCountry[v.country] = {n:0, totalCorrect:0, totalQs:0, brands:{}};
+    const c = byCountry[v.country];
+    c.n++;
+    c.totalCorrect += v.score||0;
+    c.totalQs += v.total||0;
+    (v.guesses||[]).forEach(g=>{
+      if(!g || !g.brand) return;
+      if(!c.brands[g.brand]){
+        c.brands[g.brand] = {role:g.role||'', ratios:[], invests:[], ratioOk:0, investOk:0, actualRatio:g.actualRatio, idealInvest:g.idealInvest, n:0};
+      }
+      const b = c.brands[g.brand];
+      b.n++;
+      b.ratios.push(parseFloat(g.ratio||0));
+      b.invests.push(parseFloat(g.invest||0));
+      if(g.ratioOk) b.ratioOk++;
+      if(g.investOk) b.investOk++;
+    });
+  });
+
+  const totalAttempts = valid.length;
+  const totalCorrect = valid.reduce((s,[,v])=>s+(v.score||0),0);
+  const totalQs = valid.reduce((s,[,v])=>s+(v.total||0),0);
+  const avgPct = totalQs ? Math.round((totalCorrect/totalQs)*100) : 0;
+
+  let html = `<div class="grid2">
+    <div class="card">
+      <h3>Per-country participation</h3>
+      <p class="help">${totalAttempts} attendees across ${Object.keys(byCountry).length} countries \u00b7 average <strong style="color:${avgPct>=70?'#4ade80':avgPct>=40?'#60a5fa':'#f87171'}">${avgPct}%</strong> of brands in the target range.</p>
+      <table class="mini-table" style="margin-top:10px">
+        <thead><tr><th>Country</th><th style="text-align:right">Attendees</th><th style="text-align:right">Brands hit</th></tr></thead>
+        <tbody>`;
+  Object.entries(byCountry).sort((a,b)=>b[1].n-a[1].n).forEach(([country,c])=>{
+    const pct = c.totalQs ? Math.round((c.totalCorrect/c.totalQs)*100) : 0;
+    const col = pct>=70?'#4ade80':pct>=40?'#60a5fa':'#f87171';
+    html += `<tr><td>${escapeHtml(country)}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace">${c.n}</td><td style="text-align:right;color:${col};font-weight:800">${c.totalCorrect} / ${c.totalQs}</td></tr>`;
+  });
+  html += `</tbody></table></div>
+
+    <div class="card">
+      <h3>Ratio guesses vs actual</h3>
+      <p class="help">Average guessed S&amp;M/NR ratio per brand vs the actual published ratio.</p>
+      <div style="margin-top:10px;max-height:440px;overflow:auto">`;
+  Object.entries(byCountry).forEach(([country,c])=>{
+    html += `<div style="margin-bottom:14px"><div style="color:var(--gold);font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">${escapeHtml(country)}</div>`;
+    Object.entries(c.brands).forEach(([brand, b])=>{
+      const avgG = b.ratios.length ? (b.ratios.reduce((a,b)=>a+b,0)/b.ratios.length) : 0;
+      const actual = parseFloat(b.actualRatio||0);
+      const ratioPct = b.n ? Math.round((b.ratioOk/b.n)*100) : 0;
+      const col = ratioPct>=70?'#4ade80':ratioPct>=40?'#60a5fa':'#f87171';
+      html += `<div style="display:grid;grid-template-columns:130px 1fr 60px 60px 40px;gap:8px;align-items:center;margin-bottom:4px;font-size:11px;padding:4px 6px;background:rgba(255,255,255,.02);border-radius:4px">
+        <div style="color:#ddd">${escapeHtml(brand)}</div>
+        <div style="color:var(--muted);font-size:10px">avg guess <strong style="color:#fff">${avgG.toFixed(2)}x</strong> \u00b7 actual <strong style="color:var(--gold)">${actual.toFixed(2)}x</strong></div>
+        <div style="color:${col};font-weight:800;text-align:right">${ratioPct}%</div>
+        <div style="color:var(--muted);font-size:10px;text-align:right">${b.ratioOk}/${b.n}</div>
+        <div style="color:var(--muted);font-size:10px;text-align:right">${b.n}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div></div></div>`;
+  return html;
+}
+
+// ---------- KPI VIEW (Interaction 13 — mirrors slide 74/86, view-only) ----------
+function renderKpiView(ia, entries){
+  const valid = entries.filter(([,v])=>v && v.country);
+  if(!valid.length) return emptyState();
+  const byCountry = {};
+  valid.forEach(([,v])=>{ byCountry[v.country] = (byCountry[v.country]||0) + 1; });
+
+  const KPIS = (window.__ABII_KPIS__) || null;
+  const countries = Object.keys(byCountry).sort((a,b)=>byCountry[b]-byCountry[a]);
+
+  // Summed facilitator view across all countries that have data
+  let summed = '';
+  if(KPIS){
+    const kpiRefs = Object.values(KPIS)[0].kpis.map(k=>k.name);
+    const sums = kpiRefs.map(name=>{
+      const rows = Object.values(KPIS).map(c=>c.kpis.find(x=>x.name===name)).filter(k=>k&&k.hasData);
+      const bgt = rows.reduce((s,k)=>s+(k.bgt26||0),0);
+      const ac  = rows.reduce((s,k)=>s+(k.ac25||0),0);
+      const le  = rows.reduce((s,k)=>s+(k.le26||0),0);
+      return {name, bgt, ac, le, n:rows.length};
+    }).filter(r=>r.n>0);
+    const fmt = (v)=>{ if(!v) return '\u2014'; if(v>=1000) return Math.round(v).toLocaleString('en-US'); return (+v).toFixed(v<10?2:1); };
+    summed = `<div class="card" style="margin-top:12px">
+      <h3>All 13 KPIs \u2014 summed across ${Object.keys(KPIS).length} countries</h3>
+      <table class="mini-table" style="margin-top:8px">
+        <thead><tr><th>KPI</th><th style="text-align:right">BGT 2026</th><th style="text-align:right">AC 2025</th><th style="text-align:right">LE 2026</th><th style="text-align:center">vs BGT</th></tr></thead>
+        <tbody>`;
+    sums.forEach(r=>{
+      const pct = r.bgt>0 ? Math.round((r.ac/r.bgt)*100) : null;
+      const col = pct===null?'#888':pct>=90?'#4ade80':pct>=70?'#eab308':'#ef4444';
+      summed += `<tr><td>${escapeHtml(r.name)}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace">${fmt(r.bgt)}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:#aaa">${fmt(r.ac)}</td><td style="text-align:right;font-family:'JetBrains Mono',monospace;color:#aaa">${fmt(r.le)}</td><td style="text-align:center;color:${col};font-weight:800">${pct===null?'\u2014':pct+'%'}</td></tr>`;
+    });
+    summed += `</tbody></table></div>`;
+  }
+
+  let html = `<div class="card">
+    <h3>Countries viewed</h3>
+    <p class="help">${valid.length} attendees opened their KPI view. Distribution by country:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">`;
+  countries.forEach(c=>{
+    html += `<span style="padding:6px 12px;border:1px solid rgba(212,168,67,.3);border-radius:999px;font-size:12px"><strong style="color:var(--gold)">${escapeHtml(c)}</strong> <span style="color:var(--muted)">&middot; ${byCountry[c]}</span></span>`;
+  });
+  html += `</div></div>${summed}`;
+  return html;
+}
+
+// ---------- COMMITMENT (Interaction 16) ----------
+function renderCommit(ia, entries){
+  const items = entries
+    .filter(([,v])=>v && v.stop)
+    .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  const allWords = items.map(([,v])=>`${v.stop} ${v.start} ${v.track}`).join(' ');
+  return `
+    <div class="grid2">
+      <div>
+        <div class="card"><h3>Word cloud · all cards</h3><div id="wc-container"></div></div>
+      </div>
+      <div>
+        <div class="card"><h3>Live commitments &middot; ${items.length}</h3>
+          <div class="feed">
+            ${items.map(([uuid,v])=>`<div class="feed-item commit">
+              <span class="ts">${tsFmt(v.ts)}</span>
+              <span class="cm"><strong style="color:#f87171">Stop:</strong> ${escapeHtml(v.stop)}</span>
+              <span class="cm"><strong style="color:#4ade80">Start:</strong> ${escapeHtml(v.start)}</span>
+              <span class="cm"><strong style="color:var(--gold)">Track:</strong> ${escapeHtml(v.track)}</span>
+            </div>`).join('') || emptyState()}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// =========================================================
+// ADMIN PANEL (?admin=1)
+// =========================================================
+function adminPanel(ia){
+  return `
+    <div class="admin-ctrl">
+      <h4>Admin · Reset data (hidden by default — enabled with ?admin=1)</h4>
+      <div class="row">
+        <button class="admin-btn" id="admin-reset-one" type="button">Reset Interaction ${STATE.cur+1} (${ia.key})</button>
+        <button class="admin-btn" id="admin-reset-all" type="button">Reset ALL interactions for session "${SESSION_ID}"</button>
+      </div>
+      <p class="admin-hint">Use between rehearsals. Cloud data is cleared if Firebase is connected; local rehearsal data in this browser is always cleared.</p>
+    </div>
+  `;
+}
+
+function resetInteraction(iKey){
+  if(!confirm('Reset all responses for ' + iKey + '?')) return;
+  if(STATE.db){ STATE.db.ref(`sessions/${SESSION_ID}/${iKey}`).remove(); }
+  purgeLocal(iKey);
+  STATE.data[iKey] = {};
+  try{ if(STATE.bc) STATE.bc.postMessage({type:'reset', iKey}); }catch(e){}
+  renderAll();
+}
+function resetAll(){
+  if(!confirm('Reset ALL responses for session "'+SESSION_ID+'"? This cannot be undone.')) return;
+  if(STATE.db){ STATE.db.ref(`sessions/${SESSION_ID}`).remove(); }
+  purgeLocal(null);
+  STATE.data = {};
+  try{ if(STATE.bc) STATE.bc.postMessage({type:'reset'}); }catch(e){}
+  renderAll();
+}
+function purgeLocal(iKey){
+  try{
+    // Per-attendee rows
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(!k || !k.startsWith('abii_summit_'+SESSION_ID)) continue;
+      const v = JSON.parse(localStorage.getItem(k)||'{}');
+      if(!v.answers) continue;
+      if(iKey){ delete v.answers[iKey]; } else { v.answers = {}; v.cur = 0; }
+      localStorage.setItem(k, JSON.stringify(v));
+    }
+    // Shared bucket used by both pages for cross-tab sync
+    const bucketKey = 'abii_bucket_' + SESSION_ID;
+    if(iKey){
+      const bucket = JSON.parse(localStorage.getItem(bucketKey) || '{}');
+      delete bucket[iKey];
+      localStorage.setItem(bucketKey, JSON.stringify(bucket));
+    }else{
+      localStorage.removeItem(bucketKey);
+    }
+  }catch(e){}
+}
+
+// =========================================================
+// UTIL
+// =========================================================
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtNum(n){ return (n||n===0) ? Number(n).toLocaleString('en-US',{maximumFractionDigits:0}) : '—'; }
+function tsFmt(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+
+// =========================================================
+// WORD CLOUD (wordcloud2.js) — re-render only when free-text section is visible
+// =========================================================
+const STOPWORDS = new Set(['the','a','an','and','or','of','to','in','is','are','was','for','on','at','by','with','be','we','i','my','our','it','that','this','as','from','if','so','but','not','no','yes','have','has','had','do','did','more','most','about','into','than','then','all','any','each','very','can','could','should','would','they','them','their','there','here','what','which','how','why','when','where','who','you','your','its','it\u2019s','will','just','also','been','being','than','over','under','out','up','down','because','while','between','some','one','two','three','only','such','own','same','other','another','these','those','am','pm','get','got','etc','eg','ie','e.g.','i.e.']);
+function tokenize(text){
+  const words = (text||'').toLowerCase()
+    .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')
+    .split(/\s+/)
+    .filter(w=>w && w.length>2 && !STOPWORDS.has(w));
+  const freq = {};
+  words.forEach(w=>{ freq[w] = (freq[w]||0)+1; });
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
+}
+const _wcObserver = new MutationObserver(()=>{ maybeRenderWordCloud(); });
+_wcObserver.observe(document.body, {childList:true, subtree:true});
+
+function maybeRenderWordCloud(){
+  const el = document.getElementById('wc-container');
+  if(!el || !window.WordCloud) return;
+  const ia = INTERACTIONS[STATE.cur];
+  if(ia.type !== 'text' && ia.type !== 'commit') return;
+  const bucket = STATE.data[ia.key] || {};
+  let text = '';
+  Object.values(bucket).forEach(v=>{
+    if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
+    if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
+  });
+  const list = tokenize(text);
+  if(!list.length){
+    el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:40px auto"><span class="big">·</span>Word cloud will appear once attendees submit.</div>';
+    return;
+  }
+  const rect = el.getBoundingClientRect();
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.max(320, Math.floor(rect.width));
+  canvas.height = Math.max(240, Math.floor(rect.height));
+  el.innerHTML = '';
+  el.appendChild(canvas);
+  try{
+    WordCloud(canvas, {
+      list,
+      gridSize: 10,
+      weightFactor: function(size){
+        const max = list[0][1] || 1;
+        return 14 + (size/max) * 36;
+      },
+      fontFamily: 'Montserrat, sans-serif',
+      color: function(w, weight){
+        const pal = ['#d4a843','#f0d68a','#b8902f','#4ade80','#60a5fa','#a78bfa','#f97316','#ec4899','#06b6d4'];
+        const max = list[0][1] || 1;
+        if(weight/max > .7) return pal[0];
+        if(weight/max > .4) return pal[1 + (weight%3)];
+        return pal[3 + (weight%6)];
+      },
+      backgroundColor: 'transparent',
+      rotateRatio: .25,
+      rotationSteps: 2,
+      minRotation: -Math.PI/8,
+      maxRotation: Math.PI/8,
+      shuffle: false,
+      drawOutOfBound: false
+    });
+  }catch(e){ console.warn('[ABII] wordcloud render failed:', e); }
+}
+
+// =========================================================
+// INIT
+// =========================================================
+window.addEventListener('error', e=>{
+  console.error('[ABII] fatal:', e.error || e.message);
+  try{
+    const area = document.getElementById('mainArea');
+    if(area && !area.innerHTML.trim()){
+      area.innerHTML = '<div class="empty-state"><span class="big">!</span>A script error occurred. Press F12 \u2192 Console for details.<br><code style="color:#f87171;font-size:11px;margin-top:10px;display:block">' + (e.message || 'unknown') + '</code></div>';
+      setStatus('Error \u00b7 see console', 'bad');
+    }
+  }catch(_){}
+});
+
+try{ initFirebase(); }catch(e){ console.warn('initFirebase threw:', e); setStatus('Local mode \u00b7 no cloud','warn'); startLocalPoll(); }
+try{ renderAll(); }catch(e){ console.error('initial renderAll failed:', e); }
+setInterval(()=>{ try{ maybeRenderWordCloud(); }catch(e){} }, 4000);
+</script>
+</body>
+</html>

@@ -232,7 +232,6 @@ const FIREBASE_CONFIG = {
 const PARAMS     = new URLSearchParams(location.search);
 const SESSION_ID = PARAMS.get('s') || 'revenue-training-2026';
 const IS_ADMIN   = PARAMS.get('admin') === '1';
-const EXPECTED   = parseInt(PARAMS.get('expected'),10) || 50;
 const BUCKET_KEY = 'revtrn_bucket_' + SESSION_ID;
 const BC_NAME    = 'revtrn_'        + SESSION_ID;
 const FB_ROOT    = `revenue_training/${SESSION_ID}`;
@@ -410,7 +409,6 @@ function renderAll(){
   const bucket = STATE.data[q.key] || {};
   const entries = Object.entries(bucket);
   const n = entries.length;
-  const pctResp = EXPECTED > 0 ? Math.min(100, Math.round((n/EXPECTED)*100)) : 0;
 
   // Per-option tallies
   const counts = new Array(q.options.length).fill(0);
@@ -418,7 +416,7 @@ function renderAll(){
     if(v && typeof v.idx === 'number' && v.idx >= 0 && v.idx < counts.length) counts[v.idx]++;
   });
 
-  // KPI tiles: Responded + Response rate + TOP answer
+  // KPI tiles: Responded + Leading answer (no fixed "expected" target — count grows organically)
   let topIdx = -1, topCount = 0;
   counts.forEach((c,i)=>{ if(c > topCount){ topCount = c; topIdx = i; } });
   const topPct = n ? Math.round((topCount/n)*100) : 0;
@@ -434,12 +432,7 @@ function renderAll(){
       <div class="kpi-box">
         <div class="lbl">Responded</div>
         <div class="val">${n}</div>
-        <div class="sub">of ${EXPECTED} expected</div>
-      </div>
-      <div class="kpi-box ${pctResp>=60?'green':pctResp>=30?'blue':'neutral'}">
-        <div class="lbl">Response rate</div>
-        <div class="val">${pctResp}<span style="font-size:.6em">%</span></div>
-        <div class="sub">${n} / ${EXPECTED}</div>
+        <div class="sub">attendee${n===1?'':'s'} so far</div>
       </div>
       ${topCard}
     </div>

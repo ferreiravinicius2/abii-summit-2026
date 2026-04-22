@@ -228,7 +228,8 @@ const SESSION_ID  = PARAMS.get('s') || 'revenue-training-2026';   // different f
 const STORAGE_KEY = 'revtrn_attendee_' + SESSION_ID;               // different prefix
 const BUCKET_KEY  = 'revtrn_bucket_'   + SESSION_ID;               // different prefix
 const BC_NAME     = 'revtrn_'          + SESSION_ID;               // different channel
-const FRESH_START = PARAMS.get('fresh') === '1';
+// Attendee page always boots fresh on every open (see freshStart() below).
+// Kept STORAGE_KEY only so any legacy value in localStorage can be wiped.
 
 // 2-question poll — NO correct answer. Dashboard shows % per option.
 const QUESTIONS = [
@@ -280,46 +281,24 @@ function uuidv4(){
   });
 }
 
-function saveLocal(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      uuid:STATE.uuid, cur:STATE.cur, answers:STATE.answers, queue:STATE.queue
-    }));
-  }catch(e){}
-}
+// NOTE — Every time the attendee link is opened we start FROM SCRATCH.
+// The attendee sees a brand-new session: new UUID, no prior answers, no
+// prior draft, no leftover offline queue. Only STATE lives in memory for
+// the current visit. Nothing is restored from localStorage on page load.
+// saveLocal() is therefore a no-op retained so the rest of the code can
+// still call it without branching.
+function saveLocal(){ /* intentionally disabled — see note above */ }
 
-(function loadLocal(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      const v = JSON.parse(raw);
-      STATE.uuid    = v.uuid    || uuidv4();
-      STATE.cur     = v.cur     || 0;
-      STATE.answers = v.answers || {};
-      STATE.queue   = v.queue   || [];
-    } else {
-      STATE.uuid = uuidv4();
-    }
-  }catch(e){ STATE.uuid = uuidv4(); }
-  if(FRESH_START){
-    // ?fresh=1 lets facilitators / testers restart cleanly without touching others.
-    const old = STATE.uuid;
-    try{
-      const b = JSON.parse(localStorage.getItem(BUCKET_KEY) || '{}');
-      let dirty = false;
-      Object.keys(b).forEach(k=>{
-        if(b[k] && b[k][old]){ delete b[k][old]; dirty = true; }
-      });
-      if(dirty) localStorage.setItem(BUCKET_KEY, JSON.stringify(b));
-    }catch(e){}
-    try{ if(BC) BC.postMessage({type:'reset-uuid', uuid: old}); }catch(e){}
-    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-    STATE.uuid = uuidv4();
-    STATE.cur = 0;
-    STATE.answers = {};
-    STATE.queue = [];
-    saveLocal();
-  }
+(function freshStart(){
+  STATE.uuid    = uuidv4();
+  STATE.cur     = 0;
+  STATE.answers = {};
+  STATE.draft   = {};
+  STATE.queue   = [];
+  // Wipe any leftover state from a previous visit in THIS browser.
+  // (Old UUIDs that already made it to Firebase remain valid answers; this
+  //  only clears the per-device working copy so the UI starts blank.)
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
 })();
 
 // Cross-tab sync (lets the dashboard on the same browser react instantly).

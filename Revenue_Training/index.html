@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0907">
+<title>Revenue Training — Pick a View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&display=swap">
+
+<!--
+  Landing page for Revenue_Training ONLY.
+  Do NOT reuse or change any of the parent-folder assets (attendees.html,
+  live-dashboard.html, index.html, abii-data.js, etc.).
+-->
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#d4a843;--gold-l:#f0d68a;--gold-d:#b8902f;
+  --bg:#000;--txt:#ededed;--muted:#888;
+}
+html,body{height:100%;width:100%}
+body{
+  font-family:'Montserrat','Segoe UI',Arial,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 20%,rgba(212,168,67,.10) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 60% at 85% 85%,rgba(212,168,67,.06) 0%,transparent 50%),
+    linear-gradient(180deg,#000 0%,#0a0907 50%,#050403 100%);
+  color:var(--txt);min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 20px;text-align:center;
+}
+.crown{font-size:44px;color:var(--gold);text-shadow:0 0 20px rgba(212,168,67,.5);margin-bottom:16px}
+.eyebrow{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;margin-bottom:14px}
+h1{
+  font-size:clamp(34px,6.5vw,58px);font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-bottom:18px;
+  background:linear-gradient(180deg,#fff 0%,#cfcfcf 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.subtitle{color:var(--muted);font-size:clamp(14px,2vw,17px);font-weight:400;max-width:560px;line-height:1.55;margin-bottom:42px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;width:100%;max-width:720px}
+.card{
+  display:flex;flex-direction:column;align-items:flex-start;text-align:left;
+  padding:28px 26px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(30,24,14,.9),rgba(15,12,8,.9));
+  border:1px solid rgba(212,168,67,.22);text-decoration:none;color:var(--txt);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;position:relative;overflow:hidden;
+}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(212,168,67,.14),transparent 60%);opacity:.7;pointer-events:none}
+.card:hover{transform:translateY(-4px);border-color:var(--gold);box-shadow:0 16px 40px rgba(212,168,67,.15)}
+.card .ico{font-size:30px;margin-bottom:14px;color:var(--gold)}
+.card h2{font-size:21px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
+.card p{color:var(--muted);font-size:13.5px;line-height:1.5;margin-bottom:18px}
+.card .cta{color:var(--gold);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.card .cta::after{content:"\u2192";font-size:18px;transition:transform .2s}
+.card:hover .cta::after{transform:translateX(4px)}
+footer{margin-top:48px;color:#555;font-size:11px;letter-spacing:.15em;text-transform:uppercase}
+.back{
+  position:absolute;top:20px;left:20px;
+  color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  text-decoration:none;padding:6px 12px;border:1px solid rgba(255,255,255,.1);border-radius:999px;
+  transition:.15s;
+}
+.back:hover{color:var(--gold);border-color:rgba(212,168,67,.4)}
+</style>
+</head>
+<body>
+
+<a class="back" href="../">\u2190 All trainings</a>
+
+<div class="crown">\u{1F451}</div>
+<div class="eyebrow">Revenue Training</div>
+<h1>Corona \u00b7 Revenue<br>Interactive Poll</h1>
+<p class="subtitle">Choose your view. Attendees answer from their phone; the dashboard shows responses live with percentages and response counts.</p>
+
+<div class="cards">
+  <a class="card" href="Dashboard_Revenue_Training.html">
+    <div class="ico">\u{1F4CA}</div>
+    <h2>Live Dashboard</h2>
+    <p>Real-time results per question: % per option, number of respondents and leading answer.</p>
+    <span class="cta">Open dashboard</span>
+  </a>
+  <a class="card" href="Attendees_Revenue_Training.html">
+    <div class="ico">\u{1F64B}</div>
+    <h2>Attendees</h2>
+    <p>Two quick questions on Corona Price Index and Hero SKU mix. No right or wrong answers.</p>
+    <span class="cta">Join session</span>
+  </a>
+</div>
+
+<footer>AB InBev \u00b7 Revenue Training</footer>
+
+</body>
+</html>

@@ -5,7 +5,10 @@
   "redirects": [
     { "source": "/dashboard", "destination": "/live-dashboard", "permanent": false },
     { "source": "/live", "destination": "/live-dashboard", "permanent": false },
-    { "source": "/join", "destination": "/attendees", "permanent": false }
+    { "source": "/join", "destination": "/attendees", "permanent": false },
+    { "source": "/revenue", "destination": "/Revenue_Training/", "permanent": false },
+    { "source": "/revenue-dashboard", "destination": "/Revenue_Training/Dashboard_Revenue_Training", "permanent": false },
+    { "source": "/revenue-attendees", "destination": "/Revenue_Training/Attendees_Revenue_Training", "permanent": false }
   ],
   "headers": [
     {

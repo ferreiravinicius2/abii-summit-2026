@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0907">
+<title>Revenue Training — Attendees</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<!--
+  =====================================================================
+  STANDALONE FILE — DO NOT REUSE NAMES / KEYS FROM THE PARENT PROJECT.
+  This file MUST NOT touch any of the existing Summit 2026 assets
+  (attendees.html, live-dashboard.html, abii-data.js, index.html, etc.).
+  All storage keys, Firebase session path, and BroadcastChannel name are
+  namespaced under "revtrn_" / "revenue-training-2026" so attendees and
+  the sibling Dashboard_Revenue_Training.html can sync with each other
+  WITHOUT interfering with the ABII Summit Session 2 data.
+  =====================================================================
+-->
+
+<!-- Firebase (compat SDK, no build step) — same CDN URLs the rest of the repo uses -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --gold:#d4a843;--gold-l:#f0d68a;--gold-d:#b8902f;
+  --bg:#000;--card:#111;--border:#222;
+  --green:#22c55e;--red:#ef4444;--yellow:#eab308;
+  --txt:#ededed;--muted:#888;
+  --blue:#3b82f6;--purple:#a855f7;--orange:#f97316;--cyan:#06b6d4;--pink:#ec4899;
+}
+html,body{height:100%;width:100%}
+body{
+  font-family:'Montserrat','Segoe UI',Arial,sans-serif;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 10%,rgba(212,168,67,.10) 0%,transparent 50%),
+    radial-gradient(ellipse 60% 60% at 85% 90%,rgba(212,168,67,.06) 0%,transparent 50%),
+    linear-gradient(180deg,#000 0%,#0a0907 50%,#050403 100%);
+  color:var(--txt);min-height:100vh;font-weight:400;overflow-x:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+.hdr{
+  position:sticky;top:0;z-index:50;
+  padding:10px 14px 12px;
+  background:linear-gradient(180deg,rgba(0,0,0,.96),rgba(0,0,0,.82));
+  border-bottom:1px solid rgba(212,168,67,.25);
+  backdrop-filter:blur(10px);
+  padding-top:calc(10px + env(safe-area-inset-top));
+}
+.hdr::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,168,67,.45) 30%,rgba(212,168,67,.6) 50%,rgba(212,168,67,.45) 70%,transparent);
+}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hdr-titles{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.hdr-titles .kicker{font-style:italic;color:var(--gold-l);font-weight:700;font-size:12px;letter-spacing:.04em}
+.hdr-titles .sub{font-size:10px;color:#fff;letter-spacing:.22em;font-weight:800;text-transform:uppercase}
+.counter{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:#000;
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));
+  padding:5px 10px;border-radius:4px;font-weight:800;letter-spacing:.08em;white-space:nowrap;
+}
+.prog{margin-top:10px;height:4px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:3px;transition:width .35s ease}
+
+.net-chip{
+  position:fixed;top:calc(56px + env(safe-area-inset-top));right:10px;z-index:60;
+  font-size:10px;padding:3px 8px;border-radius:10px;
+  background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.4);
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:none;
+}
+.net-chip.offline{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.4);display:inline-block}
+.net-chip.queued{background:rgba(234,179,8,.15);color:#facc15;border-color:rgba(234,179,8,.4);display:inline-block}
+
+.main{padding:18px 14px 110px;max-width:520px;margin:0 auto}
+
+.tag-pill{
+  display:inline-block;color:#000;font-size:10px;text-transform:uppercase;
+  letter-spacing:.22em;font-weight:800;padding:4px 11px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-l));border-radius:3px;margin-bottom:10px;
+  box-shadow:0 2px 6px rgba(212,168,67,.25);
+}
+.qref{font-size:10px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
+
+h1.step-title{
+  font-size:1.55em;font-weight:900;line-height:1.18;letter-spacing:-.01em;
+  color:#fff;text-transform:uppercase;margin:4px 0 8px;
+  position:relative;padding-bottom:10px;
+}
+h1.step-title::after{
+  content:"";position:absolute;left:0;bottom:0;width:50px;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-l));border-radius:2px;
+}
+.gold-grad{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-l) 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.prompt{color:#ddd;font-size:1em;line-height:1.5;margin-bottom:6px}
+.prompt strong{color:#fff}
+.hint{font-size:.78em;color:var(--muted);font-style:italic;margin:6px 0 14px;line-height:1.5}
+
+.card{
+  background:linear-gradient(135deg,rgba(20,20,20,.9),rgba(10,10,10,.9));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:14px 16px;margin-bottom:12px;
+  backdrop-filter:blur(6px);
+}
+.card-gold{border-color:rgba(212,168,67,.45);background:linear-gradient(135deg,rgba(212,168,67,.11),rgba(212,168,67,.03));box-shadow:0 0 14px rgba(212,168,67,.08)}
+.card-green{border-color:rgba(34,197,94,.45);background:linear-gradient(135deg,rgba(34,197,94,.09),rgba(34,197,94,.02))}
+
+.opt{
+  display:block;width:100%;text-align:left;
+  padding:14px 16px;margin-bottom:10px;
+  background:linear-gradient(135deg,rgba(20,20,20,.85),rgba(10,10,10,.85));
+  border:1px solid rgba(255,255,255,.12);border-radius:12px;color:#ededed;cursor:pointer;
+  font-size:15px;line-height:1.35;font-family:inherit;
+  transition:transform .12s,border-color .2s,background .2s;min-height:52px;
+}
+.opt:active{transform:scale(.985)}
+.opt .letter{display:inline-block;width:22px;color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;margin-right:2px}
+.opt.sel{border-color:var(--gold);background:linear-gradient(135deg,rgba(212,168,67,.18),rgba(212,168,67,.05));box-shadow:0 0 10px rgba(212,168,67,.15)}
+.opt.disabled{pointer-events:none;opacity:.8}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;min-width:48px;padding:12px 22px;border-radius:10px;cursor:pointer;
+  font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid #333;background:rgba(255,255,255,.02);color:#ddd;
+  transition:transform .12s, background .2s, border-color .2s;user-select:none;-webkit-user-select:none;
+}
+.btn:active{transform:scale(.97)}
+.btn-fill{background:linear-gradient(135deg,var(--gold),var(--gold-l));color:#000;border:none;box-shadow:0 4px 14px rgba(212,168,67,.35)}
+.btn-fill:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn-ghost{background:transparent;border:1px solid rgba(212,168,67,.45);color:var(--gold)}
+.btn-wide{width:100%}
+
+.nav-row{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(0deg,rgba(0,0,0,.96),rgba(0,0,0,.78));
+  border-top:1px solid rgba(212,168,67,.25);
+  backdrop-filter:blur(10px);
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+}
+.nav-row .btn{flex:1}
+
+.submitted{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:30px 20px;border-radius:14px;
+  border:1px solid rgba(34,197,94,.4);
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.02));
+  margin-top:10px;
+}
+.submitted .chk{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),#4ade80);
+  display:flex;align-items:center;justify-content:center;margin-bottom:14px;
+  font-size:34px;color:#000;font-weight:900;
+  box-shadow:0 0 26px rgba(34,197,94,.45);
+}
+.submitted h2{font-size:1.15em;color:#4ade80;margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+.submitted p{font-size:13px;color:#bbb;line-height:1.5}
+.submitted .your-answer{
+  margin-top:12px;padding:10px 14px;border-radius:10px;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);
+  font-size:13px;color:#fff;font-weight:700;letter-spacing:.02em;
+}
+
+.toast{
+  position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(10px);
+  padding:10px 18px;border-radius:999px;
+  background:rgba(34,197,94,.92);color:#04140a;
+  font-weight:800;font-size:13px;letter-spacing:.04em;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+  z-index:100;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-titles">
+      <span class="kicker">Revenue Training</span>
+      <span class="sub">Attendees — Live Poll</span>
+    </div>
+    <span class="counter" id="counter">1 / 2</span>
+  </div>
+  <div class="prog"><div class="prog-fill" id="progFill" style="width:50%"></div></div>
+</div>
+
+<span class="net-chip" id="netChip"></span>
+
+<main class="main" id="mainArea"></main>
+
+<div class="nav-row">
+  <button class="btn btn-ghost" id="btnPrev" type="button" disabled>Back</button>
+  <button class="btn btn-fill"  id="btnNext" type="button" disabled>Next</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">Answer submitted</div>
+
+<script>
+// =====================================================================
+// CONFIG — kept separate from the parent project on purpose.
+// Uses a DISTINCT Firebase session id + local-storage namespace so it
+// CANNOT collide with abii-summit attendees/dashboard data.
+// =====================================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB05xedHIpWCfEoFrAldxrTKAcRz2eBntk",
+  authDomain: "abii-summit.firebaseapp.com",
+  databaseURL: "https://abii-summit-default-rtdb.firebaseio.com",
+  projectId: "abii-summit",
+  storageBucket: "abii-summit.firebasestorage.app",
+  messagingSenderId: "446056292778",
+  appId: "1:446056292778:web:971fe1adc58c7f07ab0bd3",
+  measurementId: "G-1937VJ27ZR"
+};
+
+const PARAMS      = new URLSearchParams(location.search);
+const SESSION_ID  = PARAMS.get('s') || 'revenue-training-2026';   // different from "abii-2026"
+const STORAGE_KEY = 'revtrn_attendee_' + SESSION_ID;               // different prefix
+const BUCKET_KEY  = 'revtrn_bucket_'   + SESSION_ID;               // different prefix
+const BC_NAME     = 'revtrn_'          + SESSION_ID;               // different channel
+const FRESH_START = PARAMS.get('fresh') === '1';
+
+// 2-question poll — NO correct answer. Dashboard shows % per option.
+const QUESTIONS = [
+  {
+    key: 'q1',
+    tag: 'Price Index',
+    title: 'How is <span class="gold-grad">Corona\u2019s Price Index</span> in your market?',
+    prompt: 'Think about where Corona is positioned on shelf vs the premium reference in your country.',
+    options: [
+      {letter:'A', label:'Above the Ideal Range'},
+      {letter:'B', label:'In the Ideal Range'},
+      {letter:'C', label:'Below the Ideal Range'}
+    ]
+  },
+  {
+    key: 'q2',
+    tag: 'Hero SKU mix',
+    title: 'How much of our <span class="gold-grad">total Corona volume</span> comes from the Hero SKU?',
+    prompt: 'Take your best estimate for your market — no right answer, we\u2019ll compare perceptions live.',
+    options: [
+      {letter:'A', label:'~10%'},
+      {letter:'B', label:'~25%'},
+      {letter:'C', label:'~50%'},
+      {letter:'D', label:'~60%'},
+      {letter:'E', label:'>60%'}
+    ]
+  }
+];
+
+// =====================================================================
+// STATE
+// =====================================================================
+const STATE = {
+  uuid: null,
+  cur: 0,
+  answers: {},       // {q1:{idx,letter,label,ts,uuid}, q2:{...}}
+  draft: {},         // {q1:idx, q2:idx}  — selections not yet submitted
+  queue: [],         // offline writes queue for Firebase
+  db: null,
+  online: navigator.onLine
+};
+
+function uuidv4(){
+  // crypto.randomUUID is widely available; falls back to RFC4122 v4 if not.
+  if (crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+function saveLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      uuid:STATE.uuid, cur:STATE.cur, answers:STATE.answers, queue:STATE.queue
+    }));
+  }catch(e){}
+}
+
+(function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const v = JSON.parse(raw);
+      STATE.uuid    = v.uuid    || uuidv4();
+      STATE.cur     = v.cur     || 0;
+      STATE.answers = v.answers || {};
+      STATE.queue   = v.queue   || [];
+    } else {
+      STATE.uuid = uuidv4();
+    }
+  }catch(e){ STATE.uuid = uuidv4(); }
+  if(FRESH_START){
+    // ?fresh=1 lets facilitators / testers restart cleanly without touching others.
+    const old = STATE.uuid;
+    try{
+      const b = JSON.parse(localStorage.getItem(BUCKET_KEY) || '{}');
+      let dirty = false;
+      Object.keys(b).forEach(k=>{
+        if(b[k] && b[k][old]){ delete b[k][old]; dirty = true; }
+      });
+      if(dirty) localStorage.setItem(BUCKET_KEY, JSON.stringify(b));
+    }catch(e){}
+    try{ if(BC) BC.postMessage({type:'reset-uuid', uuid: old}); }catch(e){}
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    STATE.uuid = uuidv4();
+    STATE.cur = 0;
+    STATE.answers = {};
+    STATE.queue = [];
+    saveLocal();
+  }
+})();
+
+// Cross-tab sync (lets the dashboard on the same browser react instantly).
+let BC = null;
+try{ if(typeof BroadcastChannel !== 'undefined') BC = new BroadcastChannel(BC_NAME); }catch(e){}
+
+// =====================================================================
+// FIREBASE
+// =====================================================================
+function initFirebase(){
+  try{
+    if(!window.firebase) throw new Error('Firebase SDK missing');
+    if(FIREBASE_CONFIG.apiKey.includes('Demo-Replace')){
+      console.info('[RevTrn] Firebase placeholder — running local-only.');
+      return null;
+    }
+    const app = firebase.initializeApp(FIREBASE_CONFIG, 'revtrn');
+    const db  = firebase.database(app);
+    db.ref('.info/connected').on('value', snap=>{
+      STATE.online = !!snap.val();
+      updateNetChip();
+      if(STATE.online) flushQueue();
+    });
+    return db;
+  }catch(e){
+    console.warn('[RevTrn] Firebase init failed, local-only:', e.message);
+    return null;
+  }
+}
+STATE.db = initFirebase();
+
+function updateNetChip(){
+  const chip = document.getElementById('netChip');
+  chip.classList.remove('offline','queued');
+  chip.style.display = 'none';
+  if(!STATE.db){
+    chip.textContent = 'Local mode'; chip.classList.add('queued');
+  } else if(!STATE.online){
+    chip.textContent = 'Offline — will retry'; chip.classList.add('offline');
+  } else if(STATE.queue.length){
+    chip.textContent = 'Syncing…'; chip.classList.add('queued');
+  }
+}
+window.addEventListener('online',  ()=>{STATE.online=true;updateNetChip();flushQueue()});
+window.addEventListener('offline', ()=>{STATE.online=false;updateNetChip()});
+
+function enqueueWrite(path, data){
+  STATE.queue.push({path,data}); saveLocal(); updateNetChip(); flushQueue();
+}
+async function flushQueue(){
+  if(!STATE.db || !STATE.online || !STATE.queue.length) return;
+  const pending = STATE.queue.slice();
+  for(const item of pending){
+    try{
+      await STATE.db.ref(item.path).set(item.data);
+      STATE.queue = STATE.queue.filter(x=>x!==item);
+      saveLocal();
+    }catch(e){ console.warn('[RevTrn] write failed, will retry:', e.message); break; }
+  }
+  updateNetChip();
+}
+
+// =====================================================================
+// SUBMIT — writes to shared bucket (for same-origin dashboard) + Firebase
+// =====================================================================
+function submitAnswer(qKey, payload){
+  const data = Object.assign({ts: Date.now(), uuid: STATE.uuid}, payload);
+  STATE.answers[qKey] = data;
+  saveLocal();
+
+  // 1) shared bucket (so Dashboard_Revenue_Training.html sees it on same browser)
+  try{
+    const bucket = JSON.parse(localStorage.getItem(BUCKET_KEY) || '{}');
+    if(!bucket[qKey]) bucket[qKey] = {};
+    bucket[qKey][STATE.uuid] = data;
+    localStorage.setItem(BUCKET_KEY, JSON.stringify(bucket));
+  }catch(e){ console.warn('[RevTrn] bucket write blocked:', e.message); }
+
+  // 2) BroadcastChannel for live same-browser sync
+  try{ if(BC) BC.postMessage({type:'submit', session:SESSION_ID, qKey, uuid:STATE.uuid, data}); }catch(e){}
+
+  // 3) Firebase Realtime Database — DIFFERENT root path so we never touch abii-2026 data.
+  const path = `revenue_training/${SESSION_ID}/${qKey}/${STATE.uuid}`;
+  if(STATE.db && STATE.online){
+    STATE.db.ref(path).set(data).catch(()=>enqueueWrite(path,data));
+  } else {
+    enqueueWrite(path, data);
+  }
+
+  showToast('Answer submitted');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+// =====================================================================
+// RENDER
+// =====================================================================
+function renderSlide(){
+  const q = QUESTIONS[STATE.cur];
+  const submitted = STATE.answers[q.key];
+  document.getElementById('counter').textContent = `${STATE.cur+1} / ${QUESTIONS.length}`;
+  document.getElementById('progFill').style.width = `${((STATE.cur+1)/QUESTIONS.length)*100}%`;
+
+  const main = document.getElementById('mainArea');
+  if(submitted){
+    main.innerHTML = `
+      <div class="qref">Question ${STATE.cur+1} of ${QUESTIONS.length}</div>
+      <div class="tag-pill">${q.tag}</div>
+      <h1 class="step-title">${q.title}</h1>
+      <div class="submitted" role="status">
+        <div class="chk">\u2713</div>
+        <h2>Answer received</h2>
+        <p>Thanks! Your response is live on the facilitator\u2019s dashboard.</p>
+        <div class="your-answer">Your pick: <span style="color:var(--gold)">${submitted.letter}</span> &middot; ${escapeHtml(submitted.label)}</div>
+      </div>
+    `;
+  } else {
+    const picked = STATE.draft[q.key];
+    const opts = q.options.map((o,i)=>`
+      <button class="opt ${picked===i?'sel':''}" data-idx="${i}" type="button">
+        <span class="letter">${o.letter}.</span> ${escapeHtml(o.label)}
+      </button>
+    `).join('');
+    main.innerHTML = `
+      <div class="qref">Question ${STATE.cur+1} of ${QUESTIONS.length}</div>
+      <div class="tag-pill">${q.tag}</div>
+      <h1 class="step-title">${q.title}</h1>
+      <p class="prompt">${q.prompt}</p>
+      <p class="hint">No right answer — just share your view.</p>
+      <div class="card">
+        ${opts}
+        <button class="btn btn-fill btn-wide" id="qSubmit" type="button" style="margin-top:6px" ${picked===undefined?'disabled':''}>Submit answer</button>
+      </div>
+    `;
+    main.querySelectorAll('.opt').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        STATE.draft[q.key] = +b.dataset.idx;
+        renderSlide();
+      });
+    });
+    const sub = document.getElementById('qSubmit');
+    sub.addEventListener('click', ()=>{
+      const idx = STATE.draft[q.key];
+      if(idx === undefined) return;
+      const opt = q.options[idx];
+      submitAnswer(q.key, {idx, letter:opt.letter, label:opt.label});
+      renderSlide();
+      updateNavButtons();
+    });
+  }
+
+  updateNavButtons();
+}
+
+function updateNavButtons(){
+  const prev = document.getElementById('btnPrev');
+  const next = document.getElementById('btnNext');
+  prev.disabled = STATE.cur === 0;
+  // Next is enabled either if the current Q is already submitted OR we're on the last step.
+  const q = QUESTIONS[STATE.cur];
+  const done = !!STATE.answers[q.key];
+  if(STATE.cur === QUESTIONS.length - 1){
+    next.textContent = done ? 'Finish' : 'Next';
+    next.disabled = !done;
+  } else {
+    next.textContent = 'Next';
+    next.disabled = !done;
+  }
+}
+
+document.getElementById('btnPrev').addEventListener('click', ()=>{
+  if(STATE.cur > 0){ STATE.cur--; saveLocal(); renderSlide(); }
+});
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  const q = QUESTIONS[STATE.cur];
+  if(!STATE.answers[q.key]) return;
+  if(STATE.cur < QUESTIONS.length - 1){
+    STATE.cur++; saveLocal(); renderSlide();
+  } else {
+    const allDone = QUESTIONS.every(qq => !!STATE.answers[qq.key]);
+    if(allDone){
+      document.getElementById('mainArea').innerHTML = `
+        <div class="submitted" style="margin-top:30px">
+          <div class="chk">\u2713</div>
+          <h2>All done — thank you!</h2>
+          <p>Your answers are live on the facilitator\u2019s dashboard.<br>You can close this page.</p>
+        </div>
+      `;
+      document.getElementById('btnPrev').disabled = true;
+      document.getElementById('btnNext').disabled = true;
+    }
+  }
+});
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// =====================================================================
+// INIT
+// =====================================================================
+renderSlide();
+updateNetChip();
+</script>
+</body>
+</html>

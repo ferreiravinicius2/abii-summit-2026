@@ -788,7 +788,7 @@ const INTERACTIONS = [
       const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
 
       let html = `
-        <p class="prompt">For each brand, <strong>guess the S&amp;M/NR ratio</strong> and the <strong>ideal investment</strong> (M USD) to hit the target range for its role.</p>
+        <p class="prompt">For each brand, do the math: <strong>guess the current S&amp;M/NR ratio</strong> and the <strong>ideal investment</strong> (M USD) to land in the target range. A hint chip shows the correct direction.</p>
         <div class="country-label">1. Pick your country</div>
         <div class="country-grid" role="list">
           ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i5c="${c}">${c}</button>`).join('')}
@@ -818,11 +818,32 @@ const INTERACTIONS = [
           const iOk = st.checked && iDiff <= (idealInv * 0.25);
           const borderCol = st.checked ? ((rOk && iOk) ? 'rgba(34,197,94,.5)' : (!rOk && !iOk) ? 'rgba(239,68,68,.5)' : 'rgba(234,179,8,.5)') : 'rgba(255,255,255,.08)';
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
+          // Action hint: based on current ratio vs target range.
+          // Under-range => Increase. Over-range => Decrease. In-range => Keep.
+          // If the gap is extreme (>2x max), we suggest Re-allocate.
+          let hintLabel, hintBg, hintFg;
+          if(b.ratio < b.minRatio){
+            if(b.ratio < b.minRatio * 0.4){ hintLabel = 'Re-allocate'; hintBg = 'rgba(239,68,68,.18)';  hintFg = '#f87171'; }
+            else                          { hintLabel = 'Increase';    hintBg = 'rgba(96,165,250,.18)'; hintFg = '#60a5fa'; }
+          } else if(b.ratio > b.maxRatio){
+            if(b.ratio > b.maxRatio * 2) { hintLabel = 'Re-allocate'; hintBg = 'rgba(239,68,68,.18)';  hintFg = '#f87171'; }
+            else                          { hintLabel = 'Decrease';    hintBg = 'rgba(234,179,8,.18)';  hintFg = '#eab308'; }
+          } else {
+            hintLabel = 'Keep as is'; hintBg = 'rgba(34,197,94,.18)'; hintFg = '#4ade80';
+          }
           html += `
-            <div class="card" style="padding:12px 14px;margin-bottom:10px;border-color:${borderCol}">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-                <div><strong style="color:#fff;font-size:14px">${b.brand}</strong> <span style="font-size:10px;color:${roleCol};font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-left:6px">${b.role}</span></div>
-                <span style="font-size:10px;color:var(--muted);letter-spacing:.1em">NR ${b.nr.toFixed(1)}M \u00b7 inv ${b.smDme.toFixed(2)}M</span>
+            <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${borderCol}">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <strong style="color:#fff;font-size:15px">${b.brand}</strong>
+                    <span style="font-size:10px;color:${roleCol};font-weight:800;letter-spacing:.12em;text-transform:uppercase">${b.role}</span>
+                  </div>
+                  <div style="font-size:12px;color:#cbd5e1;margin-top:4px;font-family:'JetBrains Mono',monospace">
+                    NR <strong style="color:#fff">${b.nr.toFixed(1)}M</strong> · current inv <strong style="color:#fff">${b.smDme.toFixed(2)}M</strong>
+                  </div>
+                </div>
+                <span title="Hint: suggested action for this brand" style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:${hintBg};color:${hintFg};white-space:nowrap">${hintLabel}</span>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
                 <div>
@@ -842,9 +863,15 @@ const INTERACTIONS = [
                 </div>` : ''}
             </div>`;
         });
-        const allFilled = brands.every((_,i)=>{ const g=st.guesses[i]; return g && g.ratio && g.invest; });
+        const totalFields = brands.length * 2;
+        const filledFields = brands.reduce((acc,_,i)=>{
+          const g = st.guesses[i] || {};
+          return acc + (g.ratio?1:0) + (g.invest?1:0);
+        },0);
+        const allFilled = filledFields === totalFields;
         if(!st.checked){
-          html += `<button class="btn btn-fill btn-wide" id="i5-check" type="button" ${!allFilled?'disabled':''} style="margin-top:8px">Check my answers</button>`;
+          const btnLabel = allFilled ? 'Check my answers' : `Fill all fields to check (${filledFields} / ${totalFields})`;
+          html += `<button class="btn btn-fill btn-wide" id="i5-check" type="button" ${!allFilled?'disabled':''} style="margin-top:8px">${btnLabel}</button>`;
         } else {
           html += `<button class="btn btn-fill btn-wide" id="i5-submit" type="button" style="margin-top:8px">Submit my answers</button>`;
         }
@@ -863,16 +890,37 @@ const INTERACTIONS = [
           renderSlide();
         });
       });
+      // Update the Check button label + enabled state live as the user types,
+      // without re-rendering the whole slide (which would steal input focus).
+      const refreshCheckBtn = ()=>{
+        const chk = document.getElementById('i5-check');
+        if(!chk) return;
+        const d = st.country ? DATA_SM[st.country] : null;
+        if(!d) return;
+        const brands = d.brands.filter(b=>b.nr>0);
+        const totalFields = brands.length * 2;
+        const filledFields = brands.reduce((acc,_,i)=>{
+          const g = st.guesses[i] || {};
+          return acc + (g.ratio?1:0) + (g.invest?1:0);
+        },0);
+        const allFilled = filledFields === totalFields;
+        chk.disabled = !allFilled;
+        chk.textContent = allFilled
+          ? 'Check my answers'
+          : `Fill all fields to check (${filledFields} / ${totalFields})`;
+      };
       document.querySelectorAll('[data-i5r]').forEach(inp=>{
         inp.addEventListener('input', ()=>{
           const i = +inp.dataset.i5r;
           st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {ratio: inp.value});
+          refreshCheckBtn();
         });
       });
       document.querySelectorAll('[data-i5i]').forEach(inp=>{
         inp.addEventListener('input', ()=>{
           const i = +inp.dataset.i5i;
           st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {invest: inp.value});
+          refreshCheckBtn();
         });
       });
       const chk = document.getElementById('i5-check');
@@ -977,7 +1025,7 @@ const INTERACTIONS = [
         {t:'Cheapest price on the menu', c:false},
         {t:'Premium placement + suggested food pairing', c:true},
         {t:'A promotional discount on 12-packs', c:false},
-        {t:'A back-of-house pallet', c:false}
+        {t:'Happy-hour 2-for-1 voucher', c:false}
       ];
       const R2_opts = [
         {t:'The bartender — who recommends it at the moment of order', c:true},

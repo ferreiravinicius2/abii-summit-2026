@@ -221,6 +221,36 @@ td.bold{font-weight:700;color:#fff}
 /* Sectional labels on bar-list */
 .section-group-label{font-size:10px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;font-weight:800;margin:14px 0 8px}
 
+/* Per-attendee individual result cards (used on i11 and future multi-question screens) */
+.ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:8px}
+.ind-card{
+  border-radius:10px;padding:11px 12px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.02);transition:.15s;
+}
+.ind-card .ind-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ind-card .ind-id{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.ind-card .ind-id strong{color:#fff;font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+.ind-card .ind-score{font-size:13px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.ind-card .ind-lbl{font-size:11px;letter-spacing:.04em;margin-bottom:8px;opacity:.85}
+.ind-card .ind-answers{display:flex;gap:6px;flex-wrap:wrap}
+.iq-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:800;font-family:'JetBrains Mono',monospace;
+  letter-spacing:.06em;border:1px solid transparent;
+}
+.iq-ok {background:rgba(34,197,94,.15); color:#4ade80; border-color:rgba(34,197,94,.35)}
+.iq-bad{background:rgba(239,68,68,.15); color:#f87171; border-color:rgba(239,68,68,.35)}
+.iq-na {background:rgba(255,255,255,.05); color:#666;  border-color:rgba(255,255,255,.10)}
+.ind-green {border-color:rgba(34,197,94,.45);  background:rgba(34,197,94,.06)}
+.ind-green  .ind-score{color:#4ade80}
+.ind-green  .ind-lbl{color:#4ade80}
+.ind-yellow{border-color:rgba(234,179,8,.55);  background:rgba(234,179,8,.08)}
+.ind-yellow .ind-score{color:#eab308}
+.ind-yellow .ind-lbl{color:#eab308}
+.ind-red   {border-color:rgba(239,68,68,.5);   background:rgba(239,68,68,.08)}
+.ind-red    .ind-score{color:#f87171}
+.ind-red    .ind-lbl{color:#f87171}
+
 /* Responsive */
 @media (max-width:1100px){
   .layout{grid-template-columns:1fr}
@@ -325,7 +355,7 @@ const QUIZ_META = {
 
 // Multi-question interactions
 const I9_META = {
-  r1:{correct:1, options:['A','B','C','D'], labels:['Cheapest price','Premium placement + food pairing','Discount on 12-packs','Back-of-house pallet'], title:'Q1 · Restaurant — primary focus'},
+  r1:{correct:1, options:['A','B','C','D'], labels:['Cheapest price','Premium placement + food pairing','Discount on 12-packs','Happy-hour 2-for-1 voucher'], title:'Q1 · Restaurant — primary focus'},
   r2:{correct:0, options:['A','B','C','D'], labels:['The bartender','A radio ad','A billboard','The national TV campaign'], title:'Q2 · Restaurant — most influential touchpoint'},
   o1:{correct:1, options:['A','B','C','D'], labels:['Back of store','Store entrance','Next to checkout','Frozen food aisle'], title:'Q3 · Off-Trade — best secondary placement'},
   o2:{correct:1, options:['A','B','C','D'], labels:['Only Corona Extra','Extra + Cero + Familiar together','Any ABI beer','Corona + competitors'], title:'Q4 · Off-Trade — Full Family Execution'}
@@ -525,7 +555,7 @@ function renderAll(){
     case 'quiz':           content = renderQuiz(ia, entries); break;
     case 'yesno2':         content = renderYesNo2(ia, entries); break;
     case 'multi4':         content = renderMulti(ia, entries, I9_META,  ['r1','r2','o1','o2']); break;
-    case 'multi2':         content = renderMulti(ia, entries, I11_META, ['q1','q2']); break;
+    case 'multi2':         content = renderMulti(ia, entries, I11_META, ['q1','q2']) + renderMultiIndividual(ia, entries, I11_META, ['q1','q2']); break;
     case 'country':        content = renderCountry(ia, entries); break;
     case 'brandClassify':  content = renderBrandClassify(ia, entries); break;
     case 'smReality':      content = renderSmReality(ia, entries); break;
@@ -668,6 +698,67 @@ function renderYesNo2(ia, entries){
 }
 
 // ---------- MULTI (Interaction 9 & 11) ----------
+// ---------- MULTI (individual cards, coloured by score) ----------
+// Used today on i11 to show, per attendee:
+//   green  = got both correct
+//   yellow = missed at least one
+//   red    = missed everything
+function renderMultiIndividual(ia, entries, meta, keys){
+  if(!entries.length) return '';
+  const maxScore = keys.length;
+  // Sort: worst first (red → yellow → green), then by timestamp desc.
+  const sorted = entries.slice().sort((a,b)=>{
+    const va = a[1] || {}, vb = b[1] || {};
+    const sa = typeof va.score === 'number' ? va.score : maxScore;
+    const sb = typeof vb.score === 'number' ? vb.score : maxScore;
+    if(sa !== sb) return sa - sb;
+    return (vb.ts||0) - (va.ts||0);
+  });
+  const cards = sorted.map(([uuid,v])=>{
+    const score = (v && typeof v.score === 'number') ? v.score : 0;
+    let tone, label;
+    if(score >= maxScore)       { tone = 'green';  label = 'All correct'; }
+    else if(score === 0)        { tone = 'red';    label = 'Missed all';  }
+    else                        { tone = 'yellow'; label = `Missed ${maxScore-score} of ${maxScore}`; }
+    const tag = (uuid||'').slice(-4).toUpperCase() || '—';
+    const perQ = keys.map(k=>{
+      const qm = meta[k];
+      const pick = v && v[k];
+      if(!pick || typeof pick.idx !== 'number'){
+        return `<span class="iq-pill iq-na" title="${escapeHtml(qm.title)}">${qm.options.length===4?'—':'·'}</span>`;
+      }
+      const ok = pick.correct === true || pick.idx === qm.correct;
+      return `<span class="iq-pill ${ok?'iq-ok':'iq-bad'}" title="${escapeHtml(qm.title)} · chose ${pick.letter||qm.options[pick.idx]||''}">${pick.letter||qm.options[pick.idx]||'?'} ${ok?'\u2713':'\u2717'}</span>`;
+    }).join('');
+    return `
+      <div class="ind-card ind-${tone}">
+        <div class="ind-top">
+          <div class="ind-id">Attendee <strong>#${tag}</strong></div>
+          <div class="ind-score">${score} / ${maxScore}</div>
+        </div>
+        <div class="ind-lbl">${label}</div>
+        <div class="ind-answers">${perQ}</div>
+      </div>`;
+  }).join('');
+
+  const greenN  = sorted.filter(e=>((e[1]||{}).score||0) >= maxScore).length;
+  const yellowN = sorted.filter(e=>{ const s=(e[1]||{}).score||0; return s>0 && s<maxScore; }).length;
+  const redN    = sorted.filter(e=>((e[1]||{}).score||0) === 0).length;
+
+  return `
+    <div class="card" style="margin-top:14px">
+      <h3>Per-attendee result
+        <span style="font-size:12px;font-weight:600;color:var(--muted);margin-left:8px">
+          <span style="color:#4ade80">\u25CF</span> ${greenN} all right &middot;
+          <span style="color:#eab308">\u25CF</span> ${yellowN} missed some &middot;
+          <span style="color:#f87171">\u25CF</span> ${redN} missed all
+        </span>
+      </h3>
+      <div class="ind-grid">${cards}</div>
+    </div>
+  `;
+}
+
 function renderMulti(ia, entries, meta, keys){
   const blocks = keys.map(k=>{
     const qm = meta[k];

@@ -396,10 +396,32 @@ function pullLocal(){
   renderAll();
 }
 
+// Coalesce rapid-fire renders into one per animation frame.
+// Firebase fires .on('value') once per interaction on first connect (15x) plus
+// once per attendee submit. Without debounce, 50 attendees answering in rapid
+// succession would trigger 100+ full-page renders and freeze the tab.
+let _renderScheduled = false;
+function renderAllDebounced(){
+  if(_renderScheduled) return;
+  _renderScheduled = true;
+  requestAnimationFrame(()=>{
+    _renderScheduled = false;
+    try{ renderAll(); }catch(e){ console.error('renderAll failed:', e); }
+  });
+}
+
 function startLocalSync(){
   pullLocal();
-  STATE.localPoll = setInterval(pullLocal, 1200);
-  window.addEventListener('storage', pullLocal);
+  // Only poll localStorage when Firebase is NOT connected. Once Firebase takes
+  // over, the .on('value') listeners are push-based and polling just wastes
+  // CPU + re-triggers renderAll every 1.2s for no reason.
+  if(!STATE.db){
+    STATE.localPoll = setInterval(()=>{
+      pullLocal();
+      renderAllDebounced();
+    }, 1500);
+  }
+  window.addEventListener('storage', ()=>{ pullLocal(); renderAllDebounced(); });
 
   try{
     if(typeof BroadcastChannel !== 'undefined'){
@@ -409,15 +431,15 @@ function startLocalSync(){
         if(m.type === 'submit' && m.iKey && m.uuid && m.data){
           STATE.data[m.iKey] = STATE.data[m.iKey] || {};
           STATE.data[m.iKey][m.uuid] = m.data;
-          renderAll();
+          renderAllDebounced();
         } else if(m.type === 'reset'){
           if(m.iKey){ STATE.data[m.iKey] = {}; } else { STATE.data = {}; }
-          renderAll();
+          renderAllDebounced();
         } else if(m.type === 'reset-uuid' && m.uuid){
           Object.keys(STATE.data).forEach(ik=>{
             if(STATE.data[ik] && STATE.data[ik][m.uuid]) delete STATE.data[ik][m.uuid];
           });
-          renderAll();
+          renderAllDebounced();
         }
       });
       STATE.bc = bc;
@@ -453,7 +475,7 @@ function initFirebase(){
         // but we keep local-only entries (useful during rehearsal).
         const remote = snap.val() || {};
         STATE.data[ia.key] = Object.assign({}, STATE.data[ia.key] || {}, remote);
-        renderAll();
+        renderAllDebounced();
       });
     });
   }catch(e){
@@ -535,6 +557,10 @@ function renderAll(){
     if(b) b.addEventListener('click', ()=>resetInteraction(ia.key));
     const ball = document.getElementById('admin-reset-all');
     if(ball) ball.addEventListener('click', ()=>resetAll());
+  }
+
+  if(ia.type === 'text' || ia.type === 'commit'){
+    maybeRenderWordCloud();
   }
 }
 
@@ -1009,10 +1035,16 @@ function tokenize(text){
   words.forEach(w=>{ freq[w] = (freq[w]||0)+1; });
   return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
 }
-const _wcObserver = new MutationObserver(()=>{ maybeRenderWordCloud(); });
-_wcObserver.observe(document.body, {childList:true, subtree:true});
+// Word cloud: re-render only when the underlying text actually changes, and
+// only when the page is visible. The previous MutationObserver on document.body
+// caused an infinite feedback loop (renderAll modifies DOM → observer fires →
+// maybeRenderWordCloud re-renders → DOM changes again → loop).
+let _wcLastSignature = '';
+let _wcGuard = false;
 
 function maybeRenderWordCloud(){
+  if(_wcGuard) return;
+  if(document.hidden) return;
   const el = document.getElementById('wc-container');
   if(!el || !window.WordCloud) return;
   const ia = INTERACTIONS[STATE.cur];
@@ -1023,6 +1055,9 @@ function maybeRenderWordCloud(){
     if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
     if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
   });
+  const signature = ia.key + '|' + text.length + '|' + text.slice(0,200);
+  if(signature === _wcLastSignature) return;
+  _wcLastSignature = signature;
   const list = tokenize(text);
   if(!list.length){
     el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:40px auto"><span class="big">·</span>Word cloud will appear once attendees submit.</div>';
@@ -1032,8 +1067,10 @@ function maybeRenderWordCloud(){
   const canvas = document.createElement('canvas');
   canvas.width  = Math.max(320, Math.floor(rect.width));
   canvas.height = Math.max(240, Math.floor(rect.height));
+  _wcGuard = true;
   el.innerHTML = '';
   el.appendChild(canvas);
+  setTimeout(()=>{ _wcGuard = false; }, 100);
   try{
     WordCloud(canvas, {
       list,
@@ -1075,9 +1112,14 @@ window.addEventListener('error', e=>{
   }catch(_){}
 });
 
-try{ initFirebase(); }catch(e){ console.warn('initFirebase threw:', e); setStatus('Local mode \u00b7 no cloud','warn'); startLocalPoll(); }
+try{ initFirebase(); }catch(e){ console.warn('initFirebase threw:', e); setStatus('Local mode \u00b7 no cloud','warn'); }
 try{ renderAll(); }catch(e){ console.error('initial renderAll failed:', e); }
-setInterval(()=>{ try{ maybeRenderWordCloud(); }catch(e){} }, 4000);
+
+// Re-render the cloud when the tab becomes visible again (laptops throttle
+// background tabs aggressively, which can leave a stale canvas).
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) maybeRenderWordCloud();
+});
 </script>
 </body>
 </html>

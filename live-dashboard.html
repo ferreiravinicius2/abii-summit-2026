@@ -325,17 +325,18 @@ const INTERACTIONS = [
   {key:'i3',  slide:'15 / 86', tag:'Brand Classification', title:'Classify Your Brands',        type:'brandClassify'},
   {key:'i4',  slide:'16 / 86', tag:'Concept Quiz',         title:'What Makes a Mega Brand',     type:'quiz'},
   {key:'i5',  slide:'22 / 86', tag:'S&M Reality',          title:'S&M Reality — Per Brand',     type:'smReality'},
-  {key:'i6',  slide:'23 / 86', tag:'Rules Quiz',           title:'Investment Rules',            type:'quiz'},
-  {key:'i7',  slide:'28 / 86', tag:'ATL/BTL',              title:'ATL / BTL Split',             type:'quiz'},
-  {key:'i8',  slide:'36 / 86', tag:'Reflection',           title:'There Is No Right Answer',    type:'text'},
-  {key:'i9',  slide:'47 / 86', tag:'Execution Check',      title:'Strategy × Channel',          type:'multi4'},
+  {key:'i6',  slide:'23 / 86', tag:'Rules Quiz',           title:'Investment Rules',            type:'multi2', meta:'I6_META'},
+  {key:'i7',  slide:'28 / 86', tag:'ATL/BTL',              title:'ATL / BTL Split',             type:'multi2', meta:'I7_META'},
+  // i8 'There Is No Right Answer' was removed per facilitator request.
+  {key:'i9',  slide:'47 / 86', tag:'Execution Check',      title:'Strategy × Channel',          type:'multi3', meta:'I9_META'},
   // i10 (slide 54/86 — on-trade country selector) removed per facilitator request.
-  {key:'i11', slide:'57 / 86', tag:'Corona Execution',     title:'Corona — Is It Executed?',    type:'multi2'},
+  {key:'i10', slide:'54 / 86', tag:'On-Trade Execution',   title:'Corona — Is It Executed?',    type:'quiz', meta:'I10_META'},
+  {key:'i11', slide:'57 / 86', tag:'On-Trade Execution',   title:'Corona — Where to Win?',      type:'multi2', meta:'I11_META'},
   {key:'i12', slide:'65 / 86', tag:'Off-Trade Quiz',       title:'Off-Trade Execution',         type:'quiz'},
-  {key:'i13', slide:'74 / 86', tag:'Your KPIs',            title:'Your Country — Your KPIs',    type:'kpiView'},
+  {key:'i13', slide:'74 / 86', tag:'Framework Quiz',       title:'"So What" — How Do We Succeed?', type:'quiz'},
   {key:'i14', slide:'77 / 86', tag:'Framework Quiz',       title:'KPI Tracking — "So What?"',   type:'quiz'},
-  {key:'i15', slide:'78 / 86', tag:'Commitment',           title:'Your Commitment',             type:'text'},
-  {key:'i16', slide:'85 / 86', tag:'Stop/Start/Track',     title:'Personal Commitment Cards',   type:'commit'}
+  // i15 'Your Commitment' (free text) was removed per facilitator request \u2014 i16 carries the commitment now.
+  {key:'i16', slide:'85 / 86', tag:'Start/Stop',           title:'Personal Commitment Cards',   type:'commit'}
 ];
 
 // Correct-option mapping per quiz / multi interaction
@@ -344,26 +345,42 @@ const QUIZ_META = {
     'Unilateral by ABI HQ', 'Volume targets only', 'Joint plan — volume, investment, KPIs', 'Optional for smaller markets']},
   i4:  {correct:1, options:['A','B','C','D'], labels:[
     'Highest volume', 'Highest PI × Brand Power', 'Longest time in market', 'Most SKUs']},
-  i6:  {correct:2, options:['A','B','C'], labels:[
-    'Yes if it improves volume', 'Yes with Global approval', 'No — S&M/DME are for brand & execution only']},
-  i7:  {correct:2, options:['A','B','C','D'], labels:['50%','60%','70%','80%']},
+  // i6 and i7 graduated to multi2 (see I6_META / I7_META below).
+  i10: {correct:2, options:['A','B','C','D'], labels:[
+    'Fully executed', 'Product only — no real execution', 'Partially executed — bar branding', 'Over-executed — branded bar wrong']},
   i12: {correct:1, options:['A','B','C','D'], labels:[
     'Back of store', 'Store entrance — highest traffic', 'Next to checkout', 'Frozen food aisle']},
+  i13: {correct:0, options:['A','B','C','D'], labels:[
+    'Plan, tracker, results', 'Budget, headcount, ad spend', 'Awareness, reach, frequency', 'Discount, distribution, display']},
   i14: {correct:1, options:['A','B','C','D'], labels:[
     'Are results OK?', 'Do we have a plan?', 'Do we have the tracker?', 'Should we lower the budget?']}
 };
 
 // Multi-question interactions
-const I9_META = {
-  r1:{correct:1, options:['A','B','C','D'], labels:['Cheapest price','Premium placement + food pairing','Discount on 12-packs','Happy-hour 2-for-1 voucher'], title:'Q1 · Restaurant — primary focus'},
-  r2:{correct:0, options:['A','B','C','D'], labels:['The bartender','A radio ad','A billboard','The national TV campaign'], title:'Q2 · Restaurant — most influential touchpoint'},
-  o1:{correct:1, options:['A','B','C','D'], labels:['Back of store','Store entrance','Next to checkout','Frozen food aisle'], title:'Q3 · Off-Trade — best secondary placement'},
-  o2:{correct:1, options:['A','B','C','D'], labels:['Only Corona Extra','Extra + Cero + Familiar together','Any ABI beer','Corona + competitors'], title:'Q4 · Off-Trade — Full Family Execution'}
+const I6_META = {
+  q1:{correct:2, options:['A','B','C'],     labels:['Yes, if it improves volume','Yes, with Global approval','No \u2014 strictly brand building & trade'],                                          title:'Q1 \u00b7 S&M / DME for logistics?'},
+  q2:{correct:2, options:['A','B','C'],     labels:['Yes, drives trial','Yes, via Trade Marketing','No \u2014 brand building, never discounts'],                                                  title:'Q2 \u00b7 DME for discounts?'}
 };
 
+const I7_META = {
+  q1:{correct:2, options:['A','B','C','D'], labels:['50%','60%','70%','80%'],                                                                                                                   title:'Q1 \u00b7 BTL minimum for underdeveloped'},
+  q2:{correct:0, options:['A','B','C','D'], labels:['ATL = mass awareness; BTL = POC / trade','ATL = trade promo; BTL = TV / digital','ATL = premium; BTL = value','ATL = paid; BTL = owned'],   title:'Q2 \u00b7 What\u2019s ATL vs BTL?'}
+};
+
+// i9 was reduced from 4 to 3 questions (off-trade Q3 about supermarket placement removed)
+// and Q1 was reframed around the lime ritual.
+// Renderer keys now match attendees.html: q1=R1, q2=R2, q3=O2.
+const I9_META = {
+  q1:{correct:2, options:['A','B','C','D'], labels:['Cheapest price','Premium placement + food pairing','Premium placement + lime ritual','Discount on 12-packs'], title:'Q1 \u00b7 Restaurant \u2014 primary focus'},
+  q2:{correct:0, options:['A','B','C','D'], labels:['The bartender','A radio ad','A billboard','The national TV campaign'],                                          title:'Q2 \u00b7 Restaurant \u2014 most influential touchpoint'},
+  q3:{correct:1, options:['A','B','C','D'], labels:['Only Corona Extra','Extra + Cero + Familiar together','Any ABI beer','Corona + competitors'],                  title:'Q3 \u00b7 Off-Trade \u2014 Full Family Execution'}
+};
+
+// i11 was split: the old Q1 (bar branding) moved to a standalone i10 quiz,
+// the old Q2 (distribution target) became Q1 here, and a new Q2 was added (channel focus).
 const I11_META = {
-  q1:{correct:1, options:['A','B','C','D'], labels:['Fully executed','Product only — no real execution','Partially executed','Over-executed'], title:'Q1 · Corona execution rating'},
-  q2:{correct:1, options:['A','B','C','D'], labels:['25%','50%','75%','100%'], title:'Q2 · Premium On-Trade distribution target'}
+  q1:{correct:3, options:['A','B','C','D'], labels:['25%','50%','75%','100%'],                                            title:'Q1 \u00b7 Premium On-Trade where ABI is present'},
+  q2:{correct:0, options:['A','B','C','D'], labels:['Rooftop bar','Mainstream pub','Fine dining restaurant','Taco foodtruck'], title:'Q2 \u00b7 Best bar to focus Corona on'}
 };
 
 // =========================================================
@@ -555,7 +572,18 @@ function renderAll(){
     case 'quiz':           content = renderQuiz(ia, entries); break;
     case 'yesno2':         content = renderYesNo2(ia, entries); break;
     case 'multi4':         content = renderMulti(ia, entries, I9_META,  ['r1','r2','o1','o2']); break;
-    case 'multi2':         content = renderMulti(ia, entries, I11_META, ['q1','q2']) + renderMultiIndividual(ia, entries, I11_META, ['q1','q2']); break;
+    case 'multi2':         {
+      const META_MAP = {I6_META, I7_META, I11_META};
+      const m = META_MAP[ia.meta] || I11_META;
+      content = renderMulti(ia, entries, m, ['q1','q2']) + renderMultiIndividual(ia, entries, m, ['q1','q2']);
+      break;
+    }
+    case 'multi3':         {
+      const META_MAP3 = {I11_META};
+      const m3 = META_MAP3[ia.meta] || I11_META;
+      content = renderMulti(ia, entries, m3, ['q1','q2','q3']) + renderMultiIndividual(ia, entries, m3, ['q1','q2','q3']);
+      break;
+    }
     case 'country':        content = renderCountry(ia, entries); break;
     case 'brandClassify':  content = renderBrandClassify(ia, entries); break;
     case 'smReality':      content = renderSmReality(ia, entries); break;
@@ -568,7 +596,7 @@ function renderAll(){
     <div class="kpi-row">
       <div class="kpi-box"><div class="lbl">Responded</div><div class="val">${n}</div><div class="sub">of ${EXPECTED_ATTENDEES} expected</div></div>
       <div class="kpi-box ${pctResp>=60?'green':pctResp>=30?'blue':'neutral'}"><div class="lbl">Response rate</div><div class="val">${pctResp}<span style="font-size:.6em">%</span></div></div>
-      ${(ia.type==='quiz'||ia.type==='multi2'||ia.type==='multi4') ? renderCorrectKpi(ia, entries) : ''}
+      ${(ia.type==='quiz'||ia.type==='multi2'||ia.type==='multi3'||ia.type==='multi4') ? renderCorrectKpi(ia, entries) : ''}
     </div>
   `;
 
@@ -602,9 +630,9 @@ function renderCorrectKpi(ia, entries){
   let correctCount = 0, total = entries.length;
   if(ia.type === 'quiz'){
     correctCount = entries.filter(([,v])=>v && v.correct).length;
-  } else if(ia.type === 'multi2' || ia.type === 'multi4'){
+  } else if(ia.type === 'multi2' || ia.type === 'multi3' || ia.type === 'multi4'){
     // Use score / max
-    const maxScore = ia.type === 'multi2' ? 2 : 4;
+    const maxScore = ia.type === 'multi2' ? 2 : ia.type === 'multi3' ? 3 : 4;
     let totalScore = 0;
     entries.forEach(([,v])=>{ totalScore += (v && typeof v.score === 'number') ? v.score : 0; });
     const pctAvg = total ? Math.round((totalScore/(total*maxScore))*100) : 0;
@@ -905,10 +933,11 @@ function renderBrandClassify(ia, entries){
 
 // ---------- S&M REALITY (Interaction 5 — mirrors slide 22/86) ----------
 function renderSmReality(ia, entries){
-  const valid = entries.filter(([,v])=>v && v.country && Array.isArray(v.guesses));
+  const valid = entries.filter(([,v])=>v && v.country && Array.isArray(v.decisions));
   if(!valid.length) return emptyState();
 
-  // Aggregate ratio accuracy per brand/country
+  // Aggregate decisions per brand/country.
+  // Each entry now has v.decisions = [{brand, role, action, correctAction, correct, nrSharePct, invSharePct}]
   const byCountry = {};
   valid.forEach(([,v])=>{
     if(!byCountry[v.country]) byCountry[v.country] = {n:0, totalCorrect:0, totalQs:0, brands:{}};
@@ -916,17 +945,22 @@ function renderSmReality(ia, entries){
     c.n++;
     c.totalCorrect += v.score||0;
     c.totalQs += v.total||0;
-    (v.guesses||[]).forEach(g=>{
+    (v.decisions||[]).forEach(g=>{
       if(!g || !g.brand) return;
       if(!c.brands[g.brand]){
-        c.brands[g.brand] = {role:g.role||'', ratios:[], invests:[], ratioOk:0, investOk:0, actualRatio:g.actualRatio, idealInvest:g.idealInvest, n:0};
+        c.brands[g.brand] = {
+          role: g.role||'',
+          correctAction: g.correctAction || '\u2014',
+          nrSharePct: g.nrSharePct,
+          invSharePct: g.invSharePct,
+          counts: {Increase:0, Reallocate:0, 'Keep as is':0},
+          okN: 0, n: 0
+        };
       }
       const b = c.brands[g.brand];
       b.n++;
-      b.ratios.push(parseFloat(g.ratio||0));
-      b.invests.push(parseFloat(g.invest||0));
-      if(g.ratioOk) b.ratioOk++;
-      if(g.investOk) b.investOk++;
+      if(g.action && b.counts[g.action] !== undefined) b.counts[g.action]++;
+      if(g.correct) b.okN++;
     });
   });
 
@@ -938,9 +972,9 @@ function renderSmReality(ia, entries){
   let html = `<div class="grid2">
     <div class="card">
       <h3>Per-country participation</h3>
-      <p class="help">${totalAttempts} attendees across ${Object.keys(byCountry).length} countries \u00b7 average <strong style="color:${avgPct>=70?'#4ade80':avgPct>=40?'#60a5fa':'#f87171'}">${avgPct}%</strong> of brands in the target range.</p>
+      <p class="help">${totalAttempts} attendees across ${Object.keys(byCountry).length} countries \u00b7 average <strong style="color:${avgPct>=70?'#4ade80':avgPct>=40?'#60a5fa':'#f87171'}">${avgPct}%</strong> of brand decisions matched the recommended action.</p>
       <table class="mini-table" style="margin-top:10px">
-        <thead><tr><th>Country</th><th style="text-align:right">Attendees</th><th style="text-align:right">Brands hit</th></tr></thead>
+        <thead><tr><th>Country</th><th style="text-align:right">Attendees</th><th style="text-align:right">Decisions right</th></tr></thead>
         <tbody>`;
   Object.entries(byCountry).sort((a,b)=>b[1].n-a[1].n).forEach(([country,c])=>{
     const pct = c.totalQs ? Math.round((c.totalCorrect/c.totalQs)*100) : 0;
@@ -950,22 +984,29 @@ function renderSmReality(ia, entries){
   html += `</tbody></table></div>
 
     <div class="card">
-      <h3>Ratio guesses vs actual</h3>
-      <p class="help">Average guessed S&amp;M/NR ratio per brand vs the actual published ratio.</p>
-      <div style="margin-top:10px;max-height:440px;overflow:auto">`;
+      <h3>Action picked per brand</h3>
+      <p class="help">How attendees decided per brand vs the recommended action (in <span style="color:var(--gold)">gold</span>).</p>
+      <div style="margin-top:10px;max-height:480px;overflow:auto">`;
+  const actionColor = (a)=> a==='Increase'?'#60a5fa':a==='Reallocate'?'#eab308':a==='Keep as is'?'#4ade80':'#888';
   Object.entries(byCountry).forEach(([country,c])=>{
     html += `<div style="margin-bottom:14px"><div style="color:var(--gold);font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">${escapeHtml(country)}</div>`;
     Object.entries(c.brands).forEach(([brand, b])=>{
-      const avgG = b.ratios.length ? (b.ratios.reduce((a,b)=>a+b,0)/b.ratios.length) : 0;
-      const actual = parseFloat(b.actualRatio||0);
-      const ratioPct = b.n ? Math.round((b.ratioOk/b.n)*100) : 0;
-      const col = ratioPct>=70?'#4ade80':ratioPct>=40?'#60a5fa':'#f87171';
-      html += `<div style="display:grid;grid-template-columns:130px 1fr 60px 60px 40px;gap:8px;align-items:center;margin-bottom:4px;font-size:11px;padding:4px 6px;background:rgba(255,255,255,.02);border-radius:4px">
-        <div style="color:#ddd">${escapeHtml(brand)}</div>
-        <div style="color:var(--muted);font-size:10px">avg guess <strong style="color:#fff">${avgG.toFixed(2)}x</strong> \u00b7 actual <strong style="color:var(--gold)">${actual.toFixed(2)}x</strong></div>
-        <div style="color:${col};font-weight:800;text-align:right">${ratioPct}%</div>
-        <div style="color:var(--muted);font-size:10px;text-align:right">${b.ratioOk}/${b.n}</div>
-        <div style="color:var(--muted);font-size:10px;text-align:right">${b.n}</div>
+      const okPct = b.n ? Math.round((b.okN/b.n)*100) : 0;
+      const okCol = okPct>=70?'#4ade80':okPct>=40?'#60a5fa':'#f87171';
+      const total = b.n || 1;
+      const segments = ['Increase','Reallocate','Keep as is'].map(act=>{
+        const cnt = b.counts[act] || 0;
+        const pct = (cnt/total)*100;
+        if(pct < 0.5) return '';
+        const isCorrect = b.correctAction === act;
+        return `<div title="${act}: ${cnt} (${pct.toFixed(0)}%)${isCorrect?' \u2014 RIGHT':''}" style="width:${pct}%;background:${actionColor(act)};${isCorrect?'box-shadow: inset 0 0 0 2px var(--gold);':''}"></div>`;
+      }).join('');
+      html += `<div style="margin-bottom:8px;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-bottom:4px">
+          <div><strong style="color:#fff">${escapeHtml(brand)}</strong> <span style="color:var(--muted);font-size:10px">\u00b7 NR ${b.nrSharePct?.toFixed?b.nrSharePct.toFixed(1):'?'}% / Inv ${b.invSharePct?.toFixed?b.invSharePct.toFixed(1):'?'}%</span></div>
+          <div style="font-size:10.5px"><span style="color:var(--gold);font-weight:800">${escapeHtml(b.correctAction)}</span> <span style="color:${okCol};font-weight:800;margin-left:8px">${okPct}%</span></div>
+        </div>
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(0,0,0,.3)">${segments}</div>
       </div>`;
     });
     html += `</div>`;
@@ -1022,23 +1063,24 @@ function renderKpiView(ia, entries){
 
 // ---------- COMMITMENT (Interaction 16) ----------
 function renderCommit(ia, entries){
+  // i16 was reduced to 2 buckets: Start, Stop. (Old format had a third 'Track' bucket
+  // \u2014 we still render it for legacy entries.)
   const items = entries
-    .filter(([,v])=>v && v.stop)
+    .filter(([,v])=>v && (v.stop || v.start))
     .sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
-  const allWords = items.map(([,v])=>`${v.stop} ${v.start} ${v.track}`).join(' ');
   return `
     <div class="grid2">
       <div>
-        <div class="card"><h3>Word cloud · all cards</h3><div id="wc-container"></div></div>
+        <div class="card"><h3>Word cloud \u00b7 all cards</h3><div id="wc-container"></div></div>
       </div>
       <div>
         <div class="card"><h3>Live commitments &middot; ${items.length}</h3>
           <div class="feed">
             ${items.map(([uuid,v])=>`<div class="feed-item commit">
               <span class="ts">${tsFmt(v.ts)}</span>
-              <span class="cm"><strong style="color:#f87171">Stop:</strong> ${escapeHtml(v.stop)}</span>
-              <span class="cm"><strong style="color:#4ade80">Start:</strong> ${escapeHtml(v.start)}</span>
-              <span class="cm"><strong style="color:var(--gold)">Track:</strong> ${escapeHtml(v.track)}</span>
+              ${v.start ? `<span class="cm"><strong style="color:#4ade80">Start:</strong> ${escapeHtml(v.start)}</span>` : ''}
+              ${v.stop  ? `<span class="cm"><strong style="color:#f87171">Stop:</strong> ${escapeHtml(v.stop)}</span>`  : ''}
+              ${v.track ? `<span class="cm"><strong style="color:var(--gold)">Track:</strong> ${escapeHtml(v.track)}</span>` : ''}
             </div>`).join('') || emptyState()}
           </div>
         </div>

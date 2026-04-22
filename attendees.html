@@ -777,10 +777,10 @@ const INTERACTIONS = [
     render(){
       const a = STATE.answers.i5;
       if(a){
-        const rows = (a.guesses||[]).map(g=>`${g.brand}: ratio <strong>${g.ratio}x</strong> (actual ${g.actualRatio}x${g.ratioOk?' <span style="color:#4ade80">\u2713</span>':' <span style="color:#f87171">\u2717</span>'})`).join('<br>');
-        return successBlock(`Submitted \u2014 ${a.score} / ${a.total} brands in range`, rows || `Country: <strong>${a.country||'\u2014'}</strong>`);
+        const rows = (a.decisions||[]).map(g=>`${g.brand}: <strong>${g.action}</strong> ${g.correct?' <span style="color:#4ade80">\u2713</span>':' <span style="color:#f87171">\u2717 (correct: '+g.correctAction+')</span>'}`).join('<br>');
+        return successBlock(`Submitted \u2014 ${a.score} / ${a.total} brands right`, rows || `Country: <strong>${a.country||'\u2014'}</strong>`);
       }
-      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, guesses:{}, checked:false};
+      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, decisions:{}};
       const st = STATE._tmp_i5;
       const countries = Object.keys(DATA_SM);
       const d = st.country ? DATA_SM[st.country] : null;
@@ -788,7 +788,7 @@ const INTERACTIONS = [
       const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
 
       let html = `
-        <p class="prompt">For each brand, do the math: <strong>guess the current S&amp;M/NR ratio</strong> and the <strong>ideal investment</strong> (M USD) to land in the target range. A hint chip shows the correct direction.</p>
+        <p class="prompt">Compare each brand's <strong>NR share</strong> with its <strong>S&amp;M+DME share</strong>. If the brand is under-invested, <strong>Increase</strong>. If over-invested in a Sustain role, <strong>Reallocate</strong> to a Mega/Expansion brand. If balanced, <strong>Keep as is</strong>.</p>
         <div class="country-label">1. Pick your country</div>
         <div class="country-grid" role="list">
           ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i5c="${c}">${c}</button>`).join('')}
@@ -800,217 +800,233 @@ const INTERACTIONS = [
           <div class="card card-gold" style="padding:10px 12px;margin-bottom:10px">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px">
               <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">Market Type</div><div style="color:var(--gold);font-weight:800">${d.marketType}</div></div>
-              <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">ATL / BTL</div><div style="color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace">${d.atlPct}% / ${d.btlPct}%</div></div>
+              <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">Total NR</div><div style="color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace">${d.totalNR.toFixed(1)} M</div></div>
               <div><div style="color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-size:9px">Total S&amp;M+DME</div><div style="color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace">${totalInv.toFixed(2)} M</div></div>
             </div>
           </div>
-          <div class="country-label" style="margin-top:16px">3. Guess for each brand</div>`;
+          <div class="country-label" style="margin-top:16px">3. For each brand \u2014 what would you do?</div>`;
         brands.forEach((b,i)=>{
-          const g = st.guesses[i] || {};
-          const midTarget = (b.minRatio + b.maxRatio) / 2;
-          const nrShare = b.nr / d.totalNR;
-          const idealInv = midTarget * nrShare * totalInv;
-          const rVal = parseFloat(g.ratio||0);
-          const iVal = parseFloat(g.invest||0);
-          const rDiff = Math.abs(rVal - b.ratio);
-          const iDiff = Math.abs(iVal - idealInv);
-          const rOk = st.checked && rDiff <= 0.3;
-          const iOk = st.checked && iDiff <= (idealInv * 0.25);
-          const borderCol = st.checked ? ((rOk && iOk) ? 'rgba(34,197,94,.5)' : (!rOk && !iOk) ? 'rgba(239,68,68,.5)' : 'rgba(234,179,8,.5)') : 'rgba(255,255,255,.08)';
+          const pick = st.decisions[i] || null;
+          const nrSharePct  = (b.nr / d.totalNR) * 100;
+          const invSharePct = (b.smDme / totalInv) * 100;
+          const shareDiff   = invSharePct - nrSharePct; // >0 over-invested, <0 under-invested
+          // Correct action heuristic. Stays simple and pedagogical:
+          //  - Sustain over-invested by 5+ pp -> Reallocate (move $ to Mega/Expansion)
+          //  - Under-invested by 5+ pp        -> Increase
+          //  - Else                           -> Keep as is
+          let correctAction;
+          if(shareDiff <= -5)                           correctAction = 'Increase';
+          else if(shareDiff >= 5 && b.role==='Sustain') correctAction = 'Reallocate';
+          else if(shareDiff >= 5)                       correctAction = 'Reallocate';
+          else                                          correctAction = 'Keep as is';
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
-          // Action hint: based on current ratio vs target range.
-          // Under-range => Increase. Over-range => Decrease. In-range => Keep.
-          // If the gap is extreme (>2x max), we suggest Re-allocate.
-          let hintLabel, hintBg, hintFg;
-          if(b.ratio < b.minRatio){
-            if(b.ratio < b.minRatio * 0.4){ hintLabel = 'Re-allocate'; hintBg = 'rgba(239,68,68,.18)';  hintFg = '#f87171'; }
-            else                          { hintLabel = 'Increase';    hintBg = 'rgba(96,165,250,.18)'; hintFg = '#60a5fa'; }
-          } else if(b.ratio > b.maxRatio){
-            if(b.ratio > b.maxRatio * 2) { hintLabel = 'Re-allocate'; hintBg = 'rgba(239,68,68,.18)';  hintFg = '#f87171'; }
-            else                          { hintLabel = 'Decrease';    hintBg = 'rgba(234,179,8,.18)';  hintFg = '#eab308'; }
-          } else {
-            hintLabel = 'Keep as is'; hintBg = 'rgba(34,197,94,.18)'; hintFg = '#4ade80';
-          }
+          // Color the share gap pill: red if invested far less than fair, blue if far more, neutral if close.
+          const gapTone = shareDiff <= -5 ? '#f87171' : shareDiff >= 5 ? '#eab308' : '#4ade80';
+          const gapLbl  = shareDiff > 0 ? `+${shareDiff.toFixed(1)}pp over-invested` : shareDiff < 0 ? `${shareDiff.toFixed(1)}pp under-invested` : 'in line';
           html += `
-            <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${borderCol}">
+            <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${pick?'rgba(212,168,67,.45)':'rgba(255,255,255,.08)'}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
                 <div style="min-width:0">
                   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                     <strong style="color:#fff;font-size:15px">${b.brand}</strong>
                     <span style="font-size:10px;color:${roleCol};font-weight:800;letter-spacing:.12em;text-transform:uppercase">${b.role}</span>
                   </div>
-                  <div style="font-size:12px;color:#cbd5e1;margin-top:4px;font-family:'JetBrains Mono',monospace">
-                    NR <strong style="color:#fff">${b.nr.toFixed(1)}M</strong> · current inv <strong style="color:#fff">${b.smDme.toFixed(2)}M</strong>
-                  </div>
-                </div>
-                <span title="Hint: suggested action for this brand" style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:${hintBg};color:${hintFg};white-space:nowrap">${hintLabel}</span>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
-                <div>
-                  <label class="lbl" for="i5-r-${i}">Ratio guess</label>
-                  <input class="inp" id="i5-r-${i}" type="number" step="0.1" placeholder="e.g. 1.5" value="${g.ratio||''}" data-i5r="${i}" ${st.checked?'disabled':''}>
-                </div>
-                <div>
-                  <label class="lbl" for="i5-i-${i}">Ideal inv. (M)</label>
-                  <input class="inp" id="i5-i-${i}" type="number" step="0.01" placeholder="e.g. 0.50" value="${g.invest||''}" data-i5i="${i}" ${st.checked?'disabled':''}>
                 </div>
               </div>
-              <div style="font-size:11px;color:var(--muted);margin-top:6px">Target range: <strong style="color:#fff">${b.minRatio}\u2013${b.maxRatio}x</strong></div>
-              ${st.checked ? `
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:11px">
-                  <div>Actual ratio: <strong style="color:${rOk?'#4ade80':'#f87171'}">${b.ratio.toFixed(2)}x</strong> ${rOk?'\u2713':'\u2717'}</div>
-                  <div>Correct inv.: <strong style="color:${iOk?'#4ade80':'#f87171'}">${idealInv.toFixed(2)} M</strong> ${iOk?'\u2713':'\u2717'}</div>
-                </div>` : ''}
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 6px">
+                <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);padding:8px 10px;border-radius:8px">
+                  <div style="font-size:9.5px;color:#93c5fd;letter-spacing:.14em;text-transform:uppercase;font-weight:800">NR share</div>
+                  <div style="font-size:18px;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace">${nrSharePct.toFixed(1)}%</div>
+                  <div style="font-size:10px;color:#cbd5e1">${b.nr.toFixed(1)}M of ${d.totalNR.toFixed(1)}M</div>
+                </div>
+                <div style="background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.30);padding:8px 10px;border-radius:8px">
+                  <div style="font-size:9.5px;color:var(--gold);letter-spacing:.14em;text-transform:uppercase;font-weight:800">S&amp;M+DME share</div>
+                  <div style="font-size:18px;font-weight:900;color:#fff;font-family:'JetBrains Mono',monospace">${invSharePct.toFixed(1)}%</div>
+                  <div style="font-size:10px;color:#cbd5e1">${b.smDme.toFixed(2)}M of ${totalInv.toFixed(2)}M</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:${gapTone};font-weight:700;margin-bottom:10px;letter-spacing:.04em">Gap: ${gapLbl}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                ${['Increase','Reallocate','Keep as is'].map(act=>{
+                  const isPick = pick === act;
+                  const bg = isPick ? 'rgba(212,168,67,.22)' : 'rgba(255,255,255,.04)';
+                  const bd = isPick ? 'rgba(212,168,67,.6)'  : 'rgba(255,255,255,.10)';
+                  const fg = isPick ? 'var(--gold)' : '#cbd5e1';
+                  return `<button type="button" data-i5act="${i}" data-i5val="${act}" style="padding:9px 6px;border-radius:8px;background:${bg};border:1px solid ${bd};color:${fg};font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">${act}</button>`;
+                }).join('')}
+              </div>
             </div>`;
         });
-        const totalFields = brands.length * 2;
-        const filledFields = brands.reduce((acc,_,i)=>{
-          const g = st.guesses[i] || {};
-          return acc + (g.ratio?1:0) + (g.invest?1:0);
-        },0);
-        const allFilled = filledFields === totalFields;
-        if(!st.checked){
-          const btnLabel = allFilled ? 'Check my answers' : `Fill all fields to check (${filledFields} / ${totalFields})`;
-          html += `<button class="btn btn-fill btn-wide" id="i5-check" type="button" ${!allFilled?'disabled':''} style="margin-top:8px">${btnLabel}</button>`;
-        } else {
-          html += `<button class="btn btn-fill btn-wide" id="i5-submit" type="button" style="margin-top:8px">Submit my answers</button>`;
-        }
+        const allPicked = brands.every((_,i)=>!!st.decisions[i]);
+        const pickedN = brands.filter((_,i)=>!!st.decisions[i]).length;
+        const btnLabel = allPicked ? 'Submit my decisions' : `Pick an action for all brands (${pickedN} / ${brands.length})`;
+        html += `<button class="btn btn-fill btn-wide" id="i5-submit" type="button" ${!allPicked?'disabled':''} style="margin-top:8px">${btnLabel}</button>`;
       } else {
         html += `<p class="hint" style="margin-top:12px">Pick a country to start the exercise.</p>`;
       }
       return html;
     },
     bind(){
-      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, guesses:{}, checked:false};
+      if(!STATE._tmp_i5) STATE._tmp_i5 = {country:null, decisions:{}};
       const st = STATE._tmp_i5;
       document.querySelectorAll('[data-i5c]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
-          if(st.country !== btn.dataset.i5c){ st.guesses = {}; st.checked = false; }
+          if(st.country !== btn.dataset.i5c){ st.decisions = {}; }
           st.country = btn.dataset.i5c;
           renderSlide();
         });
       });
-      // Update the Check button label + enabled state live as the user types,
-      // without re-rendering the whole slide (which would steal input focus).
-      const refreshCheckBtn = ()=>{
-        const chk = document.getElementById('i5-check');
-        if(!chk) return;
-        const d = st.country ? DATA_SM[st.country] : null;
-        if(!d) return;
-        const brands = d.brands.filter(b=>b.nr>0);
-        const totalFields = brands.length * 2;
-        const filledFields = brands.reduce((acc,_,i)=>{
-          const g = st.guesses[i] || {};
-          return acc + (g.ratio?1:0) + (g.invest?1:0);
-        },0);
-        const allFilled = filledFields === totalFields;
-        chk.disabled = !allFilled;
-        chk.textContent = allFilled
-          ? 'Check my answers'
-          : `Fill all fields to check (${filledFields} / ${totalFields})`;
-      };
-      document.querySelectorAll('[data-i5r]').forEach(inp=>{
-        inp.addEventListener('input', ()=>{
-          const i = +inp.dataset.i5r;
-          st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {ratio: inp.value});
-          refreshCheckBtn();
+      document.querySelectorAll('[data-i5act]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const i = +btn.dataset.i5act;
+          st.decisions[i] = btn.dataset.i5val;
+          renderSlide();
         });
       });
-      document.querySelectorAll('[data-i5i]').forEach(inp=>{
-        inp.addEventListener('input', ()=>{
-          const i = +inp.dataset.i5i;
-          st.guesses[i] = Object.assign({}, st.guesses[i]||{}, {invest: inp.value});
-          refreshCheckBtn();
-        });
-      });
-      const chk = document.getElementById('i5-check');
-      if(chk) chk.addEventListener('click', ()=>{ st.checked = true; renderSlide(); });
       const sub = document.getElementById('i5-submit');
       if(sub) sub.addEventListener('click', ()=>{
         const d = DATA_SM[st.country];
         const brands = d.brands.filter(b=>b.nr>0);
         const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
-        const guesses = brands.map((b,i)=>{
-          const g = st.guesses[i] || {};
-          const rVal = parseFloat(g.ratio||0);
-          const iVal = parseFloat(g.invest||0);
-          const midTarget = (b.minRatio + b.maxRatio) / 2;
-          const nrShare = b.nr / d.totalNR;
-          const idealInv = midTarget * nrShare * totalInv;
+        const decisions = brands.map((b,i)=>{
+          const nrSharePct  = (b.nr / d.totalNR) * 100;
+          const invSharePct = (b.smDme / totalInv) * 100;
+          const shareDiff   = invSharePct - nrSharePct;
+          let correctAction;
+          if(shareDiff <= -5)                           correctAction = 'Increase';
+          else if(shareDiff >= 5)                       correctAction = 'Reallocate';
+          else                                          correctAction = 'Keep as is';
+          const action = st.decisions[i];
           return {
             brand: b.brand, role: b.role,
-            ratio: rVal.toFixed(2), actualRatio: b.ratio.toFixed(2),
-            invest: iVal.toFixed(2), idealInvest: idealInv.toFixed(2),
-            ratioOk: Math.abs(rVal - b.ratio) <= 0.3,
-            investOk: Math.abs(iVal - idealInv) <= idealInv * 0.25
+            nrSharePct: +nrSharePct.toFixed(1),
+            invSharePct: +invSharePct.toFixed(1),
+            action, correctAction,
+            correct: action === correctAction
           };
         });
-        const score = guesses.filter(g=>g.ratioOk && g.investOk).length;
-        submitAnswer('i5', {country:st.country, guesses, score, total:brands.length});
+        const score = decisions.filter(g=>g.correct).length;
+        submitAnswer('i5', {country:st.country, decisions, score, total:brands.length});
         STATE._tmp_i5 = null;
       });
     }
   },
 
-  // 6 — Slide 23/86 — Investment Rules
+  // 6 — Slide 23/86 — Investment Rules (2 questions on the same screen)
   {
     key:'i6', slide:'23 / 86', tag:'Rules Quiz',
     title:'Investment rules — <span class="gold-grad">can I?</span>',
     render(){
       const a = STATE.answers.i6;
-      const options = [
+      if(a){
+        const r1 = a.q1, r2 = a.q2;
+        return successBlock(`Submitted \u2014 ${a.score} / 2 right`,
+          `Q1: <strong>${r1.letter}</strong>${r1.correct?' \u2713':' \u2717'} \u00b7 Q2: <strong>${r2.letter}</strong>${r2.correct?' \u2713':' \u2717'}`);
+      }
+      const st = STATE._tmp_i6 || {q1:null, q2:null};
+      const Q1_opts = [
         {t:'Yes, if it improves volume', c:false},
         {t:'Yes, with Global approval', c:false},
-        {t:'No — S&M and DME are strictly for brand building and trade execution', c:true}
+        {t:'No \u2014 S&M and DME are strictly for brand building and trade execution', c:true}
       ];
-      return quizBlock('Can I use S&M or DME funds to solve logistics problems (delivery trucks, warehouse)?', options, a,
-        'S&M and DME are for brand building and trade execution only. Logistics is funded separately. Never mix the buckets.');
+      const Q2_opts = [
+        {t:'Yes, occasional discounts drive trial', c:false},
+        {t:'Yes, but only via the Trade Marketing budget', c:false},
+        {t:'No \u2014 DME and S&M is for brand building, never for discounts', c:true}
+      ];
+      return `
+        <p class="prompt">Two quick rule checks on what S&amp;M and DME funds can be used for.</p>
+        <div class="qblock">
+          <div class="qnum">Question 1 / 2</div>
+          <div class="qtxt">Can I use S&amp;M or DME funds to solve <strong>logistics</strong> problems (delivery trucks, warehouse)?</div>
+          ${renderOptList('i6q1', Q1_opts, st.q1)}
+        </div>
+        <div class="qblock">
+          <div class="qnum">Question 2 / 2</div>
+          <div class="qtxt">Can I use DME for <strong>discount purposes</strong>?</div>
+          ${renderOptList('i6q2', Q2_opts, st.q2)}
+        </div>
+        <button class="btn btn-fill btn-wide" id="i6-submit" type="button" ${(!st.q1||!st.q2)?'disabled':''}>Submit both answers</button>
+      `;
     },
-    bind(){ bindQuiz('i6'); }
+    bind(){
+      if(!STATE._tmp_i6) STATE._tmp_i6 = {q1:null, q2:null};
+      document.querySelectorAll('[data-group="i6q1"],[data-group="i6q2"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const g = btn.dataset.group === 'i6q1' ? 'q1' : 'q2';
+          STATE._tmp_i6[g] = {idx:+btn.dataset.idx, letter:btn.dataset.letter, correct:btn.dataset.correct==='1'};
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i6-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const t = STATE._tmp_i6;
+        if(!t.q1||!t.q2) return showToast('Answer both questions');
+        submitAnswer('i6', {q1:t.q1, q2:t.q2, score:(t.q1.correct?1:0)+(t.q2.correct?1:0)});
+        STATE._tmp_i6 = null;
+      });
+    }
   },
 
-  // 7 — Slide 28/86 — ATL/BTL split
+  // 7 — Slide 28/86 — ATL/BTL split (2 questions on the same screen)
   {
     key:'i7', slide:'28 / 86', tag:'Quiz',
     title:'ATL / BTL <span class="gold-grad">split</span>',
     render(){
       const a = STATE.answers.i7;
-      const options = [
+      if(a){
+        const r1 = a.q1, r2 = a.q2;
+        return successBlock(`Submitted \u2014 ${a.score} / 2 right`,
+          `Q1: <strong>${r1.letter}</strong>${r1.correct?' \u2713':' \u2717'} \u00b7 Q2: <strong>${r2.letter}</strong>${r2.correct?' \u2713':' \u2717'}`);
+      }
+      const st = STATE._tmp_i7 || {q1:null, q2:null};
+      const Q1_opts = [
         {t:'50%', c:false},
         {t:'60%', c:false},
         {t:'70%', c:true},
         {t:'80%', c:false}
       ];
-      return quizBlock('For a Mega Brand in an <strong>underdeveloped market</strong>, what is the minimum BTL allocation?', options, a,
-        '70% minimum BTL for underdeveloped markets. Consumers need to see and try the product at the POC. ATL without distribution is wasted money.');
-    },
-    bind(){ bindQuiz('i7'); }
-  },
-
-  // 8 — Slide 36/86 — No right answer, free text reflection
-  {
-    key:'i8', slide:'36 / 86', tag:'Open Reflection',
-    title:'There is no <span class="gold-grad">right answer</span>',
-    render(){
-      const a = STATE.answers.i8;
-      if(a) return successBlock('Thanks — your reflection is in.', `"${escapeHtml(a.text)}"`);
+      const Q2_opts = [
+        {t:'ATL is for mass awareness (TV, radio, OOH); BTL is for in-store, POC and trade execution', c:true},
+        {t:'ATL is for trade promotions; BTL is for TV and digital ads', c:false},
+        {t:'ATL is for premium brands; BTL is for value brands', c:false},
+        {t:'ATL is paid media; BTL is owned media only', c:false}
+      ];
       return `
-        <p class="prompt">Look at your own market for a moment. <strong>Where would you reallocate investment</strong> in the next 90 days — and why?</p>
-        <label class="lbl" for="i8-ta">Your answer</label>
-        <textarea class="inp" id="i8-ta" rows="5" placeholder="e.g., Pull budget from Tail brand X and redirect to coolers in the top 200 Premium On-Trade POCs…" maxlength="500"></textarea>
-        <p class="hint">No scoring. We want your honest read on the best next move.</p>
-        <button class="btn btn-fill btn-wide" id="i8-submit" type="button">Submit</button>
+        <p class="prompt">Two questions on how we split investment between Above-the-Line and Below-the-Line.</p>
+        <div class="qblock">
+          <div class="qnum">Question 1 / 2</div>
+          <div class="qtxt">For a Mega Brand in an <strong>underdeveloped market</strong>, what is the minimum BTL allocation?</div>
+          ${renderOptList('i7q1', Q1_opts, st.q1)}
+        </div>
+        <div class="qblock">
+          <div class="qnum">Question 2 / 2</div>
+          <div class="qtxt">What is the difference between <strong>ATL</strong> and <strong>BTL</strong>?</div>
+          ${renderOptList('i7q2', Q2_opts, st.q2)}
+        </div>
+        <button class="btn btn-fill btn-wide" id="i7-submit" type="button" ${(!st.q1||!st.q2)?'disabled':''}>Submit both answers</button>
       `;
     },
     bind(){
-      const b = document.getElementById('i8-submit');
-      if(b) b.addEventListener('click', ()=>{
-        const text = (document.getElementById('i8-ta').value||'').trim();
-        if(text.length < 3) return showToast('Please share at least a few words');
-        submitAnswer('i8', {text});
+      if(!STATE._tmp_i7) STATE._tmp_i7 = {q1:null, q2:null};
+      document.querySelectorAll('[data-group="i7q1"],[data-group="i7q2"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const g = btn.dataset.group === 'i7q1' ? 'q1' : 'q2';
+          STATE._tmp_i7[g] = {idx:+btn.dataset.idx, letter:btn.dataset.letter, correct:btn.dataset.correct==='1'};
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i7-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const t = STATE._tmp_i7;
+        if(!t.q1||!t.q2) return showToast('Answer both questions');
+        submitAnswer('i7', {q1:t.q1, q2:t.q2, score:(t.q1.correct?1:0)+(t.q2.correct?1:0)});
+        STATE._tmp_i7 = null;
       });
     }
   },
+
+  // 8 — Removed (was 'There is no right answer' free-text reflection) per facilitator request.
 
   // 9 — Slide 47/86 — 2 Restaurant + 2 Off-Trade questions (no JBP)
   {
@@ -1019,25 +1035,20 @@ const INTERACTIONS = [
     render(){
       const a = STATE.answers.i9;
       if(a) return successBlock('All four answers recorded.', 'Great — wait for the live reveal on the main screen.');
-      const st = STATE._tmp_i9 || {r1:null, r2:null, o1:null, o2:null};
-      // Restaurant Q1
+      const st = STATE._tmp_i9 || {r1:null, r2:null, o2:null};
+      // Off-Trade Q3 (supermarket placement) was removed because it duplicated content
+      // that lives on i12 / on-trade execution slides.
       const R1_opts = [
         {t:'Cheapest price on the menu', c:false},
-        {t:'Premium placement + suggested food pairing', c:true},
-        {t:'A promotional discount on 12-packs', c:false},
-        {t:'Happy-hour 2-for-1 voucher', c:false}
+        {t:'Premium placement + suggested food pairing', c:false},
+        {t:'Premium placement + lime ritual', c:true},
+        {t:'A promotional discount on 12-packs', c:false}
       ];
       const R2_opts = [
-        {t:'The bartender — who recommends it at the moment of order', c:true},
+        {t:'The bartender \u2014 who recommends it at the moment of order', c:true},
         {t:'A radio ad playing in the background', c:false},
         {t:'A billboard outside the restaurant', c:false},
         {t:'The national TV campaign', c:false}
-      ];
-      const O1_opts = [
-        {t:'Back of store, near storage', c:false},
-        {t:'Store entrance — first thing shoppers see', c:true},
-        {t:'Next to the checkout counter', c:false},
-        {t:'In the frozen food aisle', c:false}
       ];
       const O2_opts = [
         {t:'Only Corona Extra on shelf', c:false},
@@ -1046,70 +1057,111 @@ const INTERACTIONS = [
         {t:'Corona + competitor brands side by side', c:false}
       ];
       return `
-        <p class="prompt">Four quick questions — two <strong>restaurants</strong> and two <strong>off-trade</strong>.</p>
+        <p class="prompt">Three quick questions \u2014 two <strong>restaurants</strong> and one <strong>off-trade</strong>.</p>
 
         ${multiOptBlock('R1', '1. Restaurant', 'At a premium restaurant, what is the PRIMARY execution focus for Corona?', R1_opts, st.r1)}
         ${multiOptBlock('R2', '2. Restaurant', 'In a restaurant, who is the single most influential touchpoint for Corona selection?', R2_opts, st.r2)}
-        ${multiOptBlock('O1', '3. Off-Trade', 'Which secondary placement has the MOST impact in a supermarket?', O1_opts, st.o1)}
-        ${multiOptBlock('O2', '4. Off-Trade', 'What does "Full Family Execution" mean in Off-Trade?', O2_opts, st.o2)}
+        ${multiOptBlock('O2', '3. Off-Trade', 'What does "Full Family Execution" mean in Off-Trade?', O2_opts, st.o2)}
 
-        <button class="btn btn-fill btn-wide" id="i9-submit" type="button" ${(!st.r1||!st.r2||!st.o1||!st.o2)?'disabled':''}>Submit all 4</button>
+        <button class="btn btn-fill btn-wide" id="i9-submit" type="button" ${(!st.r1||!st.r2||!st.o2)?'disabled':''}>Submit all 3</button>
       `;
     },
     bind(){
-      if(!STATE._tmp_i9) STATE._tmp_i9 = {r1:null, r2:null, o1:null, o2:null};
+      if(!STATE._tmp_i9) STATE._tmp_i9 = {r1:null, r2:null, o2:null};
       document.querySelectorAll('[data-i9]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           const key = btn.dataset.i9;
-          STATE._tmp_i9[key] = {idx:+btn.dataset.idx, correct:btn.dataset.correct==='1'};
+          STATE._tmp_i9[key] = {idx:+btn.dataset.idx, letter:btn.dataset.letter, correct:btn.dataset.correct==='1'};
           renderSlide();
         });
       });
       const s = document.getElementById('i9-submit');
       if(s) s.addEventListener('click', ()=>{
         const t = STATE._tmp_i9;
-        if(!t.r1||!t.r2||!t.o1||!t.o2) return showToast('Answer all four questions');
+        if(!t.r1||!t.r2||!t.o2) return showToast('Answer all three questions');
+        // Persist with q1/q2/q3 keys (so dashboard's generic multi3 renderer can read it).
+        // Keep r1/r2/o2 too for backwards compat with any cached entries.
         submitAnswer('i9', {
-          r1:t.r1, r2:t.r2, o1:t.o1, o2:t.o2,
-          score:[t.r1,t.r2,t.o1,t.o2].filter(x=>x&&x.correct).length
+          q1:t.r1, q2:t.r2, q3:t.o2,
+          r1:t.r1, r2:t.r2, o2:t.o2,
+          score:[t.r1,t.r2,t.o2].filter(x=>x&&x.correct).length
         });
         STATE._tmp_i9 = null;
       });
     }
   },
 
-  // Interaction 10 (slide 54/86 — on-trade country selector) was removed per facilitator request.
-
-  // 11 — Slide 57/86 — Corona question (rewritten) + distribution target
+  // 10 — Slide 54/86 — On-trade execution rating (single question)
+  // Previously this slot was a removed country selector; now it carries the bar-branding question
+  // that used to live as Q1 of the old combined i11 screen.
   {
-    key:'i11', slide:'57 / 86', tag:'On-Trade Execution',
+    key:'i10', slide:'54 / 86', tag:'On-Trade Execution',
     title:'Corona — <span class="gold-grad">is it executed?</span>',
     render(){
+      const a = STATE.answers.i10;
+      if(a) return successBlock('Submitted.', `Your answer: <strong>${a.letter}</strong>${a.correct?' \u2713':' \u2717'}`);
+      const opts = [
+        {t:'Fully executed \u2014 the brand is present and that is what matters', c:false},
+        {t:'Product only \u2014 distribution without real execution', c:false},
+        {t:'Partially executed \u2014 the bar branding execution counts as half the job', c:true},
+        {t:'Over-executed \u2014 branded bar does not fit the execution', c:false}
+      ];
+      const st = STATE._tmp_i10 || {q1:null};
+      return `
+        <p class="prompt">You enter a Corona-branded bar. The bartender pours Corona into a generic pint glass \u2014 no lime, no menu mention, no upsell, no branded bucket for the table. <strong>How would you rate this execution?</strong></p>
+        ${renderOptList('i10q1', opts, st.q1)}
+        <button class="btn btn-fill btn-wide" id="i10-submit" type="button" ${!st.q1?'disabled':''}>Submit</button>
+      `;
+    },
+    bind(){
+      if(!STATE._tmp_i10) STATE._tmp_i10 = {q1:null};
+      document.querySelectorAll('[data-group="i10q1"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          STATE._tmp_i10.q1 = {idx:+btn.dataset.idx, letter:btn.dataset.letter, correct:btn.dataset.correct==='1'};
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i10-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const t = STATE._tmp_i10;
+        if(!t.q1) return showToast('Pick an answer first');
+        submitAnswer('i10', Object.assign({}, t.q1));
+        STATE._tmp_i10 = null;
+      });
+    }
+  },
+
+  // 11 — Slide 57/86 — Distribution target + bar type to focus on for Corona
+  {
+    key:'i11', slide:'57 / 86', tag:'On-Trade Execution',
+    title:'Corona — <span class="gold-grad">where to win?</span>',
+    render(){
       const a = STATE.answers.i11;
-      if(a) return successBlock('Both answers recorded.', `Q1: <strong>${a.q1.letter}</strong>${a.q1.correct?' ✓':' ✗'} • Q2: <strong>${a.q2.letter}</strong>${a.q2.correct?' ✓':' ✗'}`);
+      if(a) return successBlock(`Submitted \u2014 ${a.score} / 2 right`,
+        `Q1: <strong>${a.q1.letter}</strong>${a.q1.correct?' \u2713':' \u2717'} \u00b7 Q2: <strong>${a.q2.letter}</strong>${a.q2.correct?' \u2713':' \u2717'}`);
       const st = STATE._tmp_i11 || {q1:null, q2:null};
       const Q1_opts = [
-        {t:'Fully executed — the brand is present and that is what matters', c:false},
-        {t:'Product only — distribution without real execution', c:true},
-        {t:'Partially executed — the cooler counts as half the job', c:false},
-        {t:'Over-executed — branded pint glass is a brand violation', c:false}
+        {t:'25%', c:false},
+        {t:'50%', c:false},
+        {t:'75%', c:false},
+        {t:'100%', c:true}
       ];
       const Q2_opts = [
-        {t:'25%', c:false},
-        {t:'50%', c:true},
-        {t:'75%', c:false},
-        {t:'100%', c:false}
+        {t:'Rooftop bar', c:true},
+        {t:'Mainstream pub', c:false},
+        {t:'Fine dining restaurant', c:false},
+        {t:'Taco foodtruck', c:false}
       ];
       return `
-        <p class="prompt">Two questions about On-Trade execution.</p>
+        <p class="prompt">Two quick questions about where Corona should win in On-Trade.</p>
         <div class="qblock">
-          <div class="qnum">Question 1 / 2 &middot; Corona</div>
-          <div class="qtxt">A Corona-branded cooler sits at the entrance of a premium bar. The bartender pours Corona into a generic pint glass — no lime, no menu mention, no upsell, no branded bucket for the table. <strong>How would you rate this execution?</strong></div>
+          <div class="qnum">Question 1 / 2 \u00b7 Distribution</div>
+          <div class="qtxt">What is the distribution target for Corona in <strong>Premium On-Trade where ABI is present</strong>?</div>
           ${renderOptList('i11q1', Q1_opts, st.q1)}
         </div>
         <div class="qblock">
-          <div class="qnum">Question 2 / 2 &middot; Distribution</div>
-          <div class="qtxt">What is the distribution target for Corona in <strong>Premium On-Trade POCs</strong>?</div>
+          <div class="qnum">Question 2 / 2 \u00b7 Channel focus</div>
+          <div class="qtxt">What kind of bar would you focus on for <strong>Corona distribution</strong>?</div>
           ${renderOptList('i11q2', Q2_opts, st.q2)}
         </div>
         <button class="btn btn-fill btn-wide" id="i11-submit" type="button" ${(!st.q1||!st.q2)?'disabled':''}>Submit both answers</button>
@@ -1152,73 +1204,22 @@ const INTERACTIONS = [
     bind(){ bindQuiz('i12'); }
   },
 
-  // 13 — Slide 74/86 — country selector + full KPI table (view-only, no submission)
+  // 13 — Slide 74/86 — "So What" framework quiz (replaced the previous Your-KPIs viewer)
   {
-    key:'i13', slide:'74 / 86', tag:'Your KPIs',
-    title:'Your country \u2014 <span class="gold-grad">your KPIs</span>',
-    viewOnly: true,
+    key:'i13', slide:'74 / 86', tag:'Framework Quiz',
+    title:'"So What" \u2014 <span class="gold-grad">how do we succeed?</span>',
     render(){
-      const st = STATE._tmp_i13 || {country:null};
-      const countries = DATA_KPIS ? Object.keys(DATA_KPIS) : [];
-      const cd = st.country && DATA_KPIS ? DATA_KPIS[st.country] : null;
-
-      let html = `
-        <p class="prompt">Pick <strong>your country</strong> and review the 2026 Commercial KPIs. No submission \u2014 just absorb your plan.</p>
-        <div class="country-label">1. Pick your country</div>
-        <div class="country-grid" role="list">
-          ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i13c="${c}">${c}</button>`).join('')}
-        </div>`;
-
-      if(cd){
-        const kpis = (cd.kpis||[]).filter(k=>k.hasData);
-        const fmt = (v)=>{ if(v==null||v===0) return '\u2014'; if(v>=1000) return Math.round(v).toLocaleString('en-US'); return (+v).toFixed(v<10?2:1); };
-        html += `
-          <div class="country-label" style="margin-top:16px">2. ${st.country} \u2014 Commercial KPIs (${kpis.length})</div>
-          <div class="kpi-wrap" style="overflow:hidden;border:1px solid rgba(212,168,67,.25);border-radius:10px">
-            <table class="kpi-table" style="width:100%;border-collapse:collapse;font-size:11px;background:rgba(0,0,0,.4)">
-              <thead>
-                <tr style="background:rgba(212,168,67,.08)">
-                  <th style="text-align:left;padding:8px 8px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;font-size:9px;font-weight:800">KPI</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">BGT 26</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">AC 25</th>
-                  <th style="text-align:right;padding:8px 6px;color:var(--gold);font-size:9px;font-weight:800">LE 26</th>
-                  <th style="text-align:center;padding:8px 4px;color:var(--gold);font-size:9px;font-weight:800">vs BGT</th>
-                </tr>
-              </thead>
-              <tbody>`;
-        kpis.forEach(k=>{
-          const pct = k.bgt26>0 ? Math.round((k.ac25/k.bgt26)*100) : null;
-          const st_ = pct===null ? '' : pct>=90?'GREEN':pct>=70?'YELLOW':'RED';
-          const col = st_==='GREEN'?'#22c55e':st_==='YELLOW'?'#eab308':st_==='RED'?'#ef4444':'#888';
-          html += `
-            <tr style="border-top:1px solid rgba(255,255,255,.05)">
-              <td style="padding:8px 8px;color:#eee">${k.name}</td>
-              <td style="padding:8px 6px;text-align:right;color:#fff;font-family:'JetBrains Mono',monospace">${fmt(k.bgt26)}</td>
-              <td style="padding:8px 6px;text-align:right;color:#ccc;font-family:'JetBrains Mono',monospace">${fmt(k.ac25)}</td>
-              <td style="padding:8px 6px;text-align:right;color:#ccc;font-family:'JetBrains Mono',monospace">${fmt(k.le26)}</td>
-              <td style="padding:8px 4px;text-align:center;color:${col};font-weight:800;font-family:'JetBrains Mono',monospace">${pct===null?'\u2014':pct+'%'}</td>
-            </tr>`;
-        });
-        html += `</tbody></table></div>
-          <p class="hint" style="margin-top:10px">Tap another country to switch views. Use the navigation below to move on.</p>`;
-      } else {
-        html += `<p class="hint" style="margin-top:12px">Pick a country to view the full KPI set.</p>`;
-      }
-      return html;
+      const a = STATE.answers.i13;
+      const options = [
+        {t:'Plan, tracker, results', c:true},
+        {t:'Budget, headcount, ad spend', c:false},
+        {t:'Awareness, reach, frequency', c:false},
+        {t:'Discount, distribution, display', c:false}
+      ];
+      return quizBlock('Using the <strong>"So What"</strong> framework, what is needed to succeed?', options, a,
+        'The "So What" loop is: <strong>Plan</strong> (a clear path), <strong>Tracker</strong> (something measuring it weekly), and <strong>Results</strong> (the KPI moving). Without all three, you cannot close the gap.');
     },
-    bind(){
-      if(!STATE._tmp_i13) STATE._tmp_i13 = {country:null};
-      const st = STATE._tmp_i13;
-      document.querySelectorAll('[data-i13c]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          st.country = btn.dataset.i13c;
-          if(DATA_KPIS && DATA_KPIS[st.country]){
-            submitAnswer('i13', {country: st.country, viewed: true}, {silent:true});
-          }
-          renderSlide();
-        });
-      });
-    }
+    bind(){ bindQuiz('i13'); }
   },
 
   // 14 — Slide 77/86 — KPI Tracking Check
@@ -1240,75 +1241,45 @@ const INTERACTIONS = [
     bind(){ bindQuiz('i14'); }
   },
 
-  // 15 — Slide 78/86 — Your commitment (free text)
-  {
-    key:'i15', slide:'78 / 86', tag:'Commitment',
-    title:'Your <span class="gold-grad">commitment</span>',
-    render(){
-      const a = STATE.answers.i15;
-      if(a) return successBlock('Your commitment is in.', `"${escapeHtml(a.text)}"`);
-      return `
-        <p class="prompt">One sentence. <strong>What will you commit to changing</strong> in your market in the next 30 days?</p>
-        <label class="lbl" for="i15-ta">Your commitment</label>
-        <textarea class="inp" id="i15-ta" rows="4" placeholder="e.g., I will rebuild the Corona KA tracker and review it weekly with my team…" maxlength="400"></textarea>
-        <p class="hint">Make it specific, measurable, and owned by you.</p>
-        <button class="btn btn-fill btn-wide" id="i15-submit" type="button">Submit</button>
-      `;
-    },
-    bind(){
-      const b = document.getElementById('i15-submit');
-      if(b) b.addEventListener('click', ()=>{
-        const text = (document.getElementById('i15-ta').value||'').trim();
-        if(text.length < 3) return showToast('Please write at least a few words');
-        submitAnswer('i15', {text});
-      });
-    }
-  },
+  // 15 — Removed (was the free-text commitment). The commitment is fully captured by i16's two buckets.
 
-  // 16 — Slide 85/86 — STOP / START / TRACK
+  // 16 — Slide 85/86 — STOP / START (was 3 buckets, reduced to 2 per facilitator request)
   {
     key:'i16', slide:'85 / 86', tag:'Personal Commitment Cards',
-    title:'Stop &middot; Start &middot; <span class="gold-grad">Track</span>',
+    title:'Start &middot; <span class="gold-grad">Stop</span>',
     render(){
       const a = STATE.answers.i16;
-      if(a) return successBlock('Your 3 cards are submitted.', `
+      if(a) return successBlock('Your 2 cards are submitted.', `
         <div style="display:flex;flex-direction:column;gap:6px">
-          <div><strong style="color:#f87171">STOP:</strong> ${escapeHtml(a.stop)}</div>
           <div><strong style="color:#4ade80">START:</strong> ${escapeHtml(a.start)}</div>
-          <div><strong style="color:var(--gold)">TRACK:</strong> ${escapeHtml(a.track)}</div>
+          <div><strong style="color:#f87171">STOP:</strong> ${escapeHtml(a.stop)}</div>
         </div>`);
       return `
-        <p class="prompt">Three final takeaways. One line each. These will be shared on the live dashboard.</p>
+        <p class="prompt">Two final takeaways. One line each. These will be shared on the live dashboard.</p>
         <div class="commit-grid">
-          <div class="commit-card stop">
-            <h3>Stop</h3>
-            <p class="sub">One practice that destroys value</p>
-            <textarea class="inp" id="i16-stop"  rows="2" placeholder="e.g., Promotions outside calendar, untracked spend…" maxlength="240"></textarea>
-          </div>
           <div class="commit-card start">
-            <h3>Start</h3>
-            <p class="sub">One investment to align to AOP this quarter</p>
-            <textarea class="inp" id="i16-start" rows="2" placeholder="e.g., Reallocate Tail brand S&M to Corona…" maxlength="240"></textarea>
+            <h3>Start Doing</h3>
+            <p class="sub">One investment / behaviour to start in your market</p>
+            <textarea class="inp" id="i16-start" rows="3" placeholder="e.g., Reallocate Tail brand S&M to Corona Premium On-Trade\u2026" maxlength="240"></textarea>
           </div>
-          <div class="commit-card track">
-            <h3>Track</h3>
-            <p class="sub">One execution KPI to own</p>
-            <textarea class="inp" id="i16-track" rows="2" placeholder="e.g., Cooler uplift per POC, price compliance %…" maxlength="240"></textarea>
+          <div class="commit-card stop">
+            <h3>Stop Doing</h3>
+            <p class="sub">One practice that destroys value</p>
+            <textarea class="inp" id="i16-stop"  rows="3" placeholder="e.g., Promotions outside calendar, untracked DME spend\u2026" maxlength="240"></textarea>
           </div>
         </div>
-        <button class="btn btn-fill btn-wide" id="i16-submit" type="button" style="margin-top:14px">Submit my 3 cards</button>
+        <button class="btn btn-fill btn-wide" id="i16-submit" type="button" style="margin-top:14px">Submit my 2 cards</button>
       `;
     },
     bind(){
       const b = document.getElementById('i16-submit');
       if(b) b.addEventListener('click', ()=>{
-        const stop  = (document.getElementById('i16-stop').value  ||'').trim();
         const start = (document.getElementById('i16-start').value ||'').trim();
-        const track = (document.getElementById('i16-track').value ||'').trim();
-        if(stop.length < 2 || start.length < 2 || track.length < 2){
-          return showToast('Please fill all three cards');
+        const stop  = (document.getElementById('i16-stop').value  ||'').trim();
+        if(start.length < 2 || stop.length < 2){
+          return showToast('Please fill both cards');
         }
-        submitAnswer('i16', {stop, start, track});
+        submitAnswer('i16', {start, stop});
       });
     }
   }
@@ -1468,17 +1439,21 @@ function bindCountryPicker(iKey){
 // =========================================================
 // MASTER RENDER
 // =========================================================
+let _lastSlideIdx = -1;
 function renderSlide(){
   const area = document.getElementById('mainArea');
   const n = INTERACTIONS.length;
 
-  // Welcome screen appears BEFORE first interaction on first load.
-  // But the user opens directly to Interaction 1 per the spec; so we skip a standalone welcome.
   const interaction = INTERACTIONS[STATE.cur];
   if(!interaction) return;
 
   document.getElementById('counter').textContent = `Interaction ${STATE.cur+1} / ${n}`;
   document.getElementById('progFill').style.width = `${Math.round(((STATE.cur+1)/n)*100)}%`;
+
+  // Preserve scroll position across in-slide re-renders (option clicks, input typing).
+  // Only scroll to top when actually navigating to a different slide.
+  const isSlideChange = _lastSlideIdx !== STATE.cur;
+  const savedScroll = isSlideChange ? 0 : (window.scrollY || window.pageYOffset || 0);
 
   area.innerHTML = `
     <div class="slide-ref">${interaction.tag} &middot; Slide ${interaction.slide}</div>
@@ -1496,7 +1471,13 @@ function renderSlide(){
   backBtn.style.opacity = backBtn.disabled ? '.35' : '1';
   nextBtn.style.opacity = nextBtn.disabled ? '.35' : '1';
 
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(isSlideChange){
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    // Restore scroll silently to avoid the jump-to-top flicker.
+    window.scrollTo({top:savedScroll, behavior:'instant'});
+  }
+  _lastSlideIdx = STATE.cur;
   saveLocal();
 }
 

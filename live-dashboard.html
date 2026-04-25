@@ -516,12 +516,32 @@ function initFirebase(){
       if(STATE.online){ setStatus('Live · streaming', null); }
       else { setStatus('Reconnecting…', 'warn'); }
     });
+    // SCALE: with ~100 attendees we deliberately avoid `.on('value')` here.
+    // `value` re-downloads the WHOLE interaction object on every submit
+    // (so by submit #100 the dashboard re-fetches all 100 records). Switching
+    // to child_added / child_changed makes each event ~150 bytes instead of
+    // ~15 KB, and CPU stays flat as the audience grows.
+    // We do ONE small `.once('value')` per interaction so the dashboard
+    // catches up on the existing answers when a facilitator opens it late.
     INTERACTIONS.forEach(ia=>{
-      db.ref(`sessions/${SESSION_ID}/${ia.key}`).on('value', snap=>{
-        // Merge: Firebase is authoritative for entries it knows about,
-        // but we keep local-only entries (useful during rehearsal).
+      const ref = db.ref(`sessions/${SESSION_ID}/${ia.key}`);
+      ref.once('value', snap=>{
         const remote = snap.val() || {};
         STATE.data[ia.key] = Object.assign({}, STATE.data[ia.key] || {}, remote);
+        renderAllDebounced();
+      });
+      ref.on('child_added', snap=>{
+        STATE.data[ia.key] = STATE.data[ia.key] || {};
+        STATE.data[ia.key][snap.key] = snap.val();
+        renderAllDebounced();
+      });
+      ref.on('child_changed', snap=>{
+        STATE.data[ia.key] = STATE.data[ia.key] || {};
+        STATE.data[ia.key][snap.key] = snap.val();
+        renderAllDebounced();
+      });
+      ref.on('child_removed', snap=>{
+        if(STATE.data[ia.key]) delete STATE.data[ia.key][snap.key];
         renderAllDebounced();
       });
     });

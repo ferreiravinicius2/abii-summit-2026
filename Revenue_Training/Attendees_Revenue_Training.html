@@ -364,8 +364,15 @@ async function flushQueue(){
 // =====================================================================
 // SUBMIT — writes to shared bucket (for same-origin dashboard) + Firebase
 // =====================================================================
+// SCALE: anti rage-click — if a user spams Submit, only the first hit per
+// 700ms window goes through. With ~100 attendees this caps Firebase writes
+// to one per question per device, no matter how impatient the audience is.
+const _SUBMIT_INFLIGHT = Object.create(null);
 function submitAnswer(qKey, payload){
-  const data = Object.assign({ts: Date.now(), uuid: STATE.uuid}, payload);
+  const now = Date.now();
+  if(_SUBMIT_INFLIGHT[qKey] && (now - _SUBMIT_INFLIGHT[qKey]) < 700) return;
+  _SUBMIT_INFLIGHT[qKey] = now;
+  const data = Object.assign({ts: now, uuid: STATE.uuid}, payload);
   STATE.answers[qKey] = data;
   saveLocal();
 
@@ -494,6 +501,14 @@ document.getElementById('btnNext').addEventListener('click', ()=>{
       `;
       document.getElementById('btnPrev').disabled = true;
       document.getElementById('btnNext').disabled = true;
+      // SCALE: Firebase Spark plan caps at 100 simultaneous connections.
+      // Once this attendee finished, drop the socket so the next person who
+      // arrives late can connect. Local queue is already flushed by here.
+      try{
+        if(STATE.queue.length === 0 && window.firebase && firebase.apps.length){
+          firebase.database(firebase.app('revtrn')).goOffline();
+        }
+      }catch(e){}
     }
   }
 });

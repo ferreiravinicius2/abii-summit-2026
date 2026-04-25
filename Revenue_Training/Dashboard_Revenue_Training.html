@@ -365,10 +365,29 @@ function initFirebase(){
       if(STATE.online) setStatus('Live \u00b7 streaming', null);
       else setStatus('Reconnecting\u2026', 'warn');
     });
+    // SCALE: prefer child_added / child_changed over .on('value') so the
+    // dashboard does not re-download the whole answer object on every submit.
+    // With ~100 attendees this keeps each Firebase event tiny (~150 bytes)
+    // instead of paying a quadratic cost as the room fills in.
     QUESTIONS.forEach(q=>{
-      db.ref(`${FB_ROOT}/${q.key}`).on('value', snap=>{
+      const ref = db.ref(`${FB_ROOT}/${q.key}`);
+      ref.once('value', snap=>{
         const remote = snap.val() || {};
         STATE.data[q.key] = Object.assign({}, STATE.data[q.key] || {}, remote);
+        renderAllDebounced();
+      });
+      ref.on('child_added', snap=>{
+        STATE.data[q.key] = STATE.data[q.key] || {};
+        STATE.data[q.key][snap.key] = snap.val();
+        renderAllDebounced();
+      });
+      ref.on('child_changed', snap=>{
+        STATE.data[q.key] = STATE.data[q.key] || {};
+        STATE.data[q.key][snap.key] = snap.val();
+        renderAllDebounced();
+      });
+      ref.on('child_removed', snap=>{
+        if(STATE.data[q.key]) delete STATE.data[q.key][snap.key];
         renderAllDebounced();
       });
     });

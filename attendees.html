@@ -539,9 +539,16 @@ async function flushQueue(){
 // =========================================================
 // SUBMIT (central API)
 // =========================================================
+// SCALE: guards against rage-clicks — when 100 people press Submit at the
+// same time, blocking duplicate writes on the same iKey within 700ms keeps
+// each device to one Firebase write per interaction.
+const _SUBMIT_INFLIGHT = Object.create(null);
 function submitAnswer(iKey, payload, opts){
   opts = opts || {};
-  const data = Object.assign({ts: Date.now(), uuid: STATE.uuid}, payload);
+  const now = Date.now();
+  if(_SUBMIT_INFLIGHT[iKey] && (now - _SUBMIT_INFLIGHT[iKey]) < 700) return;
+  _SUBMIT_INFLIGHT[iKey] = now;
+  const data = Object.assign({ts: now, uuid: STATE.uuid}, payload);
   STATE.answers[iKey] = data;
   saveLocal();
 

@@ -665,7 +665,25 @@ const INTERACTIONS = [
     bind(){ bindQuiz('i2'); }
   },
 
-  // 3 — Slide 15/86 — Classify Your Country's Brands (Mega/Expansion/Sustain/Tail)
+  // 3 — Slide 16/86 — What makes a brand a Mega Brand?
+  {
+    key:'i4', slide:'16 / 86', tag:'Concept Quiz',
+    title:'What makes a <span class="gold-grad">Mega Brand?</span>',
+    render(){
+      const a = STATE.answers.i4;
+      const options = [
+        {t:'Highest volume in the market', c:false},
+        {t:'Market Share Growth Opportunity × Brand Power combination', c:true},
+        {t:'Longest time in the market', c:false},
+        {t:'Most SKUs in the portfolio', c:false}
+      ];
+      return quizBlock('What criteria determine Mega Brand status?', options, a,
+        'Mega Brand status is determined by the combination of Market Share Growth Opportunity and Brand Power — not volume alone. A brand can have low volume but high strategic value when the headroom to grow share is large and brand power is strong.');
+    },
+    bind(){ bindQuiz('i4'); }
+  },
+
+  // 4 — Slide 15/86 — Classify Your Country's Brands (Mega/Expansion/Sustain/Tail)
   {
     key:'i3', slide:'15 / 86', tag:'Exercise',
     title:'Classify your country\u2019s <span class="gold-grad">brands</span>',
@@ -788,24 +806,6 @@ const INTERACTIONS = [
         STATE._tmp_i3 = null;
       });
     }
-  },
-
-  // 4 — Slide 16/86 — What makes a brand a Mega Brand?
-  {
-    key:'i4', slide:'16 / 86', tag:'Concept Quiz',
-    title:'What makes a <span class="gold-grad">Mega Brand?</span>',
-    render(){
-      const a = STATE.answers.i4;
-      const options = [
-        {t:'Highest volume in the market', c:false},
-        {t:'Market Share Growth Opportunity × Brand Power combination', c:true},
-        {t:'Longest time in the market', c:false},
-        {t:'Most SKUs in the portfolio', c:false}
-      ];
-      return quizBlock('What criteria determine Mega Brand status?', options, a,
-        'Mega Brand status is determined by the combination of Market Share Growth Opportunity and Brand Power — not volume alone. A brand can have low volume but high strategic value when the headroom to grow share is large and brand power is strong.');
-    },
-    bind(){ bindQuiz('i4'); }
   },
 
   // 5 — Slide 22/86 — S&M Reality exercise (guess ratio + ideal investment per brand)

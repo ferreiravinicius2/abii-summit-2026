@@ -15,6 +15,8 @@
 
 <!-- Deck datasets (Commercial KPIs for Interaction 13) -->
 <script src="abii-data.js"></script>
+<!-- Full Commercial KPIs table (Ac 2025 / BGT 2026 / LE 2026) for Interaction 8 KPI Tracker -->
+<script src="abii-comm-kpis.js"></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -345,7 +347,7 @@ button:focus-visible,.inp:focus-visible,.opt:focus-visible{outline:2px solid var
         <span class="summit">ABII Summit</span>
       </div>
     </div>
-    <div class="counter" id="counter" aria-live="polite">Interaction 1 / 15</div>
+    <div class="counter" id="counter" aria-live="polite">Interaction 1 / 16</div>
   </div>
   <div class="prog" aria-hidden="true"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
 </header>
@@ -623,26 +625,60 @@ function fmtNum(n){ return (n||n===0) ? Number(n).toLocaleString('en-US',{maximu
 
 // The 16 interactions — full metadata + render functions
 const INTERACTIONS = [
-  // 1 — Slide 3/86 — expectations
+  // 1 — Slide 3/86 — expectations + biggest daily-challenge difference
+  // Two free-text inputs, each capped at 30 characters so the dashboard word
+  // clouds stay readable. Both questions live on the same screen and submit together.
   {
     key:'i1', slide:'3 / 86', tag:'Warm-Up',
     title:'Before we <span class="gold-grad">start</span>',
     render(){
       const a = STATE.answers.i1;
-      if(a) return successBlock('Your expectations are in.', `"${escapeHtml(a.text)}"`);
+      if(a){
+        const sub = `
+          <div style="display:flex;flex-direction:column;gap:8px;text-align:left">
+            <div><strong style="color:var(--gold)">Expect:</strong> "${escapeHtml(a.expect||a.text||'')}"</div>
+            <div><strong style="color:var(--gold)">Difference:</strong> "${escapeHtml(a.difference||'')}"</div>
+          </div>`;
+        return successBlock('Your two answers are in.', sub);
+      }
       return `
-        <p class="prompt">What are <strong>your expectations</strong> for this training? Share what you want to walk away with.</p>
-        <label class="lbl" for="i1-ta">Your expectation</label>
-        <textarea class="inp" id="i1-ta" rows="4" placeholder="e.g., Learn how to allocate investment between Mega Brands and Tail…" maxlength="400"></textarea>
-        <p class="hint">Be specific. The more concrete your expectation, the more value you will capture.</p>
-        <button class="btn btn-fill btn-wide" id="i1-submit" type="button">Submit</button>
+        <p class="prompt">Two short answers. <strong>Max 30 characters each</strong> &mdash; keep it punchy.</p>
+
+        <div class="qblock">
+          <div class="qnum">Question 1 / 2</div>
+          <div class="qtxt">What are the <strong>two main things</strong> you expect to learn in this training?</div>
+          <input class="inp" id="i1-expect" type="text" maxlength="30" placeholder="e.g., Mega Brand investment rules" autocomplete="off">
+          <div class="hint" id="i1-expect-count" style="text-align:right;margin-top:4px">0 / 30</div>
+        </div>
+
+        <div class="qblock">
+          <div class="qnum">Question 2 / 2</div>
+          <div class="qtxt">Think about your <strong>daily challenges</strong>. What would make the <strong>biggest difference</strong>?</div>
+          <input class="inp" id="i1-diff" type="text" maxlength="30" placeholder="e.g., Faster execution tracking" autocomplete="off">
+          <div class="hint" id="i1-diff-count" style="text-align:right;margin-top:4px">0 / 30</div>
+        </div>
+
+        <button class="btn btn-fill btn-wide" id="i1-submit" type="button">Submit both</button>
       `;
     },
     bind(){
+      const expect = document.getElementById('i1-expect');
+      const diff   = document.getElementById('i1-diff');
+      const ec     = document.getElementById('i1-expect-count');
+      const dc     = document.getElementById('i1-diff-count');
+      function paint(){
+        if(ec) ec.textContent = (expect.value||'').length + ' / 30';
+        if(dc) dc.textContent = (diff.value||'').length + ' / 30';
+      }
+      if(expect) expect.addEventListener('input', paint);
+      if(diff)   diff.addEventListener('input', paint);
       document.getElementById('i1-submit').addEventListener('click', ()=>{
-        const text = (document.getElementById('i1-ta').value||'').trim();
-        if(text.length < 3) return showToast('Please share at least a few words');
-        submitAnswer('i1', {text});
+        const e = (expect.value||'').trim().slice(0,30);
+        const d = (diff.value||'').trim().slice(0,30);
+        if(e.length < 2 || d.length < 2) return showToast('Please answer both questions');
+        // Persist both fields. Keep `text` for backward-compat with the existing
+        // dashboard renderer that reads .text into the word cloud.
+        submitAnswer('i1', {expect: e, difference: d, text: e});
       });
     }
   },
@@ -1063,9 +1099,127 @@ const INTERACTIONS = [
     }
   },
 
-  // 8 — Removed (was 'There is no right answer' free-text reflection) per facilitator request.
+  // 8 — Commercial KPIs Tracker (interactive country picker → full KPI table)
+  // Replaces the old 'There is no right answer' free-text reflection.
+  // Data source: abii-comm-kpis.js (auto-generated from "2026 Comm KPIs.xlsx").
+  // Output: AC 2025 · BGT 2026 · LE 2026 for every KPI of the picked country.
+  {
+    key:'i8kpi', slide:'36 / 86', tag:'Commercial KPIs Tracker',
+    title:'Commercial KPIs <span class="gold-grad">Tracker</span>',
+    render(){
+      const a = STATE.answers.i8kpi;
+      const KPIS = (window.__ABII_COMM_KPIS__) || {};
+      const allCountries = Object.keys(KPIS).sort();
+      // Hide countries that have zero KPI rows (UAE / Israel / Turkey at the time of writing).
+      const countries = allCountries.filter(c => Array.isArray(KPIS[c]) && KPIS[c].length > 0);
 
-  // 9 — Slide 47/86 — 2 Restaurant + 2 Off-Trade questions (no JBP)
+      const sel = (a && a.country) || STATE._tmp_i8kpi || null;
+      const rows = sel && KPIS[sel] ? KPIS[sel] : [];
+
+      function fmt(v){
+        if(v === null || v === undefined || v === 0 || v === '') return '\u2014';
+        const n = Number(v);
+        if(!Number.isFinite(n)) return '\u2014';
+        if(Math.abs(n) >= 1000) return Math.round(n).toLocaleString('en-US');
+        return n.toFixed(Math.abs(n) < 10 ? 2 : 1);
+      }
+      // Indicative status colour vs BGT (LE / BGT). Only used for visual cue.
+      function tone(le, bgt){
+        if(!bgt || bgt === 0) return '#888';
+        const r = (le||0) / bgt;
+        if(r >= 0.95) return '#4ade80';
+        if(r >= 0.70) return '#eab308';
+        return '#f87171';
+      }
+
+      let html = `
+        <p class="prompt">Pick your country and review the <strong>Commercial KPIs</strong> &mdash; AC 2025, BGT 2026, and the latest LE 2026. These are the same numbers tracked in the official AOP file.</p>
+        <div class="country-label">1. Pick your country</div>
+        <div class="country-grid" role="list">
+          ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${sel===c?'active':''}" data-i8c="${c}">${c}</button>`).join('')}
+        </div>`;
+
+      if(sel && rows.length){
+        html += `
+          <div class="country-label" style="margin-top:16px">2. ${sel} &mdash; all KPIs</div>
+          <div class="card card-gold" style="padding:0;overflow:hidden">
+            <table class="kpi-table" aria-label="Commercial KPIs for ${sel}" style="font-size:11.5px">
+              <tr>
+                <th style="width:48%">KPI</th>
+                <th style="text-align:right">AC 2025</th>
+                <th style="text-align:right">BGT 2026</th>
+                <th style="text-align:right">LE 2026</th>
+              </tr>
+              ${rows.map(k=>{
+                const col = tone(k.le26, k.bgt26);
+                return `<tr>
+                  <td class="nm" style="line-height:1.25">${escapeHtml(k.name)}<div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px">${escapeHtml(k.measure||'')}</div></td>
+                  <td class="num" style="text-align:right">${fmt(k.ac25)}</td>
+                  <td class="num" style="text-align:right;color:#fff;font-weight:700">${fmt(k.bgt26)}</td>
+                  <td class="num" style="text-align:right;color:${col};font-weight:700">${fmt(k.le26)}</td>
+                </tr>`;
+              }).join('')}
+            </table>
+          </div>
+          <p class="hint" style="margin-top:10px">Color on LE 2026 vs BGT 2026: <span style="color:#4ade80;font-weight:700">\u25CF</span> &ge;95% &middot; <span style="color:#eab308;font-weight:700">\u25CF</span> 70-94% &middot; <span style="color:#f87171;font-weight:700">\u25CF</span> &lt;70%</p>
+        `;
+        if(!a){
+          html += `<button class="btn btn-fill btn-wide" id="i8kpi-submit" type="button" style="margin-top:8px">Confirm my country &amp; submit</button>`;
+        } else {
+          html += `<div class="card card-green" style="margin-top:12px;text-align:center"><p style="font-size:12px;color:#4ade80;font-weight:700">\u2713 Submitted to the dashboard</p></div>`;
+        }
+      } else if(sel) {
+        html += `<p class="hint" style="margin-top:12px">No KPI rows available for <strong>${escapeHtml(sel)}</strong> yet.</p>`;
+      } else {
+        html += `<p class="hint" style="margin-top:12px">Pick a country to load its full KPI table.</p>`;
+      }
+      return html;
+    },
+    bind(){
+      const KPIS = (window.__ABII_COMM_KPIS__) || {};
+      document.querySelectorAll('[data-i8c]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          STATE._tmp_i8kpi = btn.dataset.i8c;
+          renderSlide();
+        });
+      });
+      const s = document.getElementById('i8kpi-submit');
+      if(s) s.addEventListener('click', ()=>{
+        const country = STATE._tmp_i8kpi;
+        if(!country) return showToast('Pick a country first');
+        const rows = KPIS[country] || [];
+        // Persist a compact summary so the dashboard can list which countries
+        // attendees opened. Full table is re-derived on the dashboard side.
+        submitAnswer('i8kpi', {country, kpiCount: rows.length});
+        STATE._tmp_i8kpi = null;
+      });
+    }
+  },
+
+  // 9 — Extra Interactions separator
+  // Placeholder screen the facilitator presents only if there is time left.
+  // No submit, no scoring \u2014 just a clean banner before the bonus content.
+  {
+    key:'iExtra', slide:'\u2014', tag:'Bonus',
+    title:'Extra <span class="gold-grad">Interactions</span>',
+    render(){
+      return `
+        <div class="card card-gold" style="text-align:center;padding:32px 22px;margin-top:8px">
+          <div style="font-size:48px;line-height:1;margin-bottom:14px">\u2728</div>
+          <h2 style="font-size:1.4em;color:#fff;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Extra Interactions</h2>
+          <p style="color:#bbb;font-size:14px;line-height:1.5;max-width:340px;margin:0 auto">
+            From here on, the next interactions are <strong style="color:var(--gold)">bonus content</strong> &mdash; we will only run them if there is time left in the session.
+          </p>
+          <p style="color:var(--muted);font-size:11.5px;margin-top:14px;letter-spacing:.06em">
+            Wait for the facilitator before moving on.
+          </p>
+        </div>
+      `;
+    },
+    bind(){ /* no-op */ }
+  },
+
+  // 10 (extras start here) — Slide 47/86 — 2 Restaurant + 2 Off-Trade questions (no JBP)
   {
     key:'i9', slide:'47 / 86', tag:'Execution Check',
     title:'Match strategy to <span class="gold-grad">channel</span>',

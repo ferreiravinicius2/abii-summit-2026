@@ -10,6 +10,8 @@
 
 <!-- Deck datasets (Commercial KPIs for Interaction 13) -->
 <script src="abii-data.js"></script>
+<!-- Full Commercial KPIs table (Ac 2025 / BGT 2026 / LE 2026) for Interaction 8 KPI Tracker -->
+<script src="abii-comm-kpis.js"></script>
 
 <!-- Firebase compat + wordcloud2.js -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -156,6 +158,9 @@ h1.section-title::after{
 /* Word cloud */
 #wc-container{width:100%;min-height:320px;height:420px;border-radius:12px;border:1px solid rgba(212,168,67,.15);background:radial-gradient(ellipse at center,rgba(15,15,15,.9),rgba(5,5,5,.95));overflow:hidden}
 #wc-container canvas{width:100%!important;height:100%!important}
+/* Smaller word-cloud variant used when 2 clouds share the same row (Interaction 1). */
+.wc-mini{width:100%;min-height:240px;height:280px;border-radius:12px;border:1px solid rgba(212,168,67,.15);background:radial-gradient(ellipse at center,rgba(15,15,15,.9),rgba(5,5,5,.95));overflow:hidden}
+.wc-mini canvas{width:100%!important;height:100%!important}
 
 /* Feed */
 .feed{max-height:480px;overflow-y:auto;padding-right:6px}
@@ -320,23 +325,24 @@ document.getElementById('sessionText').textContent = 'session: ' + SESSION_ID;
 // INTERACTIONS METADATA (mirrors attendees.html)
 // =========================================================
 const INTERACTIONS = [
-  {key:'i1',  slide:'3 / 86',  tag:'Warm-Up',              title:'Expectations',                type:'text'},
-  {key:'i2',  slide:'12 / 86', tag:'AOP Quiz',             title:'Test your AOP Knowledge',     type:'quiz'},
-  {key:'i4',  slide:'16 / 86', tag:'Concept Quiz',         title:'What Makes a Mega Brand',     type:'quiz'},
-  {key:'i3',  slide:'15 / 86', tag:'Brand Classification', title:'Classify Your Brands',        type:'brandClassify'},
-  {key:'i5',  slide:'22 / 86', tag:'S&M Reality',          title:'S&M Reality — Per Brand',     type:'smReality'},
-  {key:'i6',  slide:'23 / 86', tag:'Rules Quiz',           title:'Investment Rules',            type:'multi2', meta:'I6_META'},
-  {key:'i7',  slide:'28 / 86', tag:'ATL/BTL',              title:'ATL / BTL Split',             type:'multi2', meta:'I7_META'},
-  // i8 'There Is No Right Answer' was removed per facilitator request.
-  {key:'i9',  slide:'47 / 86', tag:'Execution Check',      title:'Strategy × Channel',          type:'multi3', meta:'I9_META'},
-  // i10 (slide 54/86 — on-trade country selector) removed per facilitator request.
-  {key:'i10', slide:'54 / 86', tag:'On-Trade Execution',   title:'Corona — Is It Executed?',    type:'quiz', meta:'I10_META'},
-  {key:'i11', slide:'57 / 86', tag:'On-Trade Execution',   title:'Corona — Where to Win?',      type:'multi2', meta:'I11_META'},
-  {key:'i12', slide:'65 / 86', tag:'Off-Trade Quiz',       title:'Off-Trade Execution',         type:'quiz'},
-  {key:'i13', slide:'74 / 86', tag:'Framework Quiz',       title:'"So What" — How Do We Succeed?', type:'quiz'},
-  {key:'i14', slide:'77 / 86', tag:'Framework Quiz',       title:'KPI Tracking — "So What?"',   type:'quiz'},
-  // i15 'Your Commitment' (free text) was removed per facilitator request \u2014 i16 carries the commitment now.
-  {key:'i16', slide:'85 / 86', tag:'Start/Stop',           title:'Personal Commitment Cards',   type:'commit'}
+  {key:'i1',     slide:'3 / 86',  tag:'Warm-Up',              title:'Expectations & Daily Challenge', type:'text2'},
+  {key:'i2',     slide:'12 / 86', tag:'AOP Quiz',             title:'Test your AOP Knowledge',     type:'quiz'},
+  {key:'i4',     slide:'16 / 86', tag:'Concept Quiz',         title:'What Makes a Mega Brand',     type:'quiz'},
+  {key:'i3',     slide:'15 / 86', tag:'Brand Classification', title:'Classify Your Brands',        type:'brandClassify'},
+  {key:'i5',     slide:'22 / 86', tag:'S&M Reality',          title:'S&M Reality — Per Brand',     type:'smReality'},
+  {key:'i6',     slide:'23 / 86', tag:'Rules Quiz',           title:'Investment Rules',            type:'multi2', meta:'I6_META'},
+  {key:'i7',     slide:'28 / 86', tag:'ATL/BTL',              title:'ATL / BTL Split',             type:'multi2', meta:'I7_META'},
+  // 8 — Commercial KPIs Tracker (replaced the old free-text 'There is no right answer').
+  {key:'i8kpi',  slide:'36 / 86', tag:'Commercial KPIs Tracker', title:'Commercial KPIs Tracker',  type:'commKpi'},
+  // 9 — 'Extra Interactions' separator. Bonus content from here on.
+  {key:'iExtra', slide:'\u2014',  tag:'Bonus',                 title:'Extra Interactions',          type:'separator'},
+  {key:'i9',     slide:'47 / 86', tag:'Execution Check',       title:'Strategy × Channel',          type:'multi3', meta:'I9_META'},
+  {key:'i10',    slide:'54 / 86', tag:'On-Trade Execution',    title:'Corona — Is It Executed?',    type:'quiz', meta:'I10_META'},
+  {key:'i11',    slide:'57 / 86', tag:'On-Trade Execution',    title:'Corona — Where to Win?',      type:'multi2', meta:'I11_META'},
+  {key:'i12',    slide:'65 / 86', tag:'Off-Trade Quiz',        title:'Off-Trade Execution',         type:'quiz'},
+  {key:'i13',    slide:'74 / 86', tag:'Framework Quiz',        title:'"So What" — How Do We Succeed?', type:'quiz'},
+  {key:'i14',    slide:'77 / 86', tag:'Framework Quiz',        title:'KPI Tracking — "So What?"',   type:'quiz'},
+  {key:'i16',    slide:'85 / 86', tag:'Start/Stop',            title:'Personal Commitment Cards',   type:'commit'}
 ];
 
 // Correct-option mapping per quiz / multi interaction
@@ -589,6 +595,7 @@ function renderAll(){
   let content = '';
   switch(ia.type){
     case 'text':           content = renderText(ia, entries); break;
+    case 'text2':          content = renderText2(ia, entries); break;
     case 'quiz':           content = renderQuiz(ia, entries); break;
     case 'yesno2':         content = renderYesNo2(ia, entries); break;
     case 'multi4':         content = renderMulti(ia, entries, I9_META,  ['r1','r2','o1','o2']); break;
@@ -608,11 +615,16 @@ function renderAll(){
     case 'brandClassify':  content = renderBrandClassify(ia, entries); break;
     case 'smReality':      content = renderSmReality(ia, entries); break;
     case 'kpiView':        content = renderKpiView(ia, entries); break;
+    case 'commKpi':        content = renderCommKpiTracker(ia, entries); break;
+    case 'separator':      content = renderSeparator(ia); break;
     case 'commit':         content = renderCommit(ia, entries); break;
     default:               content = emptyState();
   }
 
-  const respBox = `
+  // Hide Responded / Response-rate cards on screens that have nothing to count
+  // (separator banner, KPI tracker which is silent-submit and informational only).
+  const HIDE_RESP_BOX = new Set(['separator']);
+  const respBox = HIDE_RESP_BOX.has(ia.type) ? '' : `
     <div class="kpi-row">
       <div class="kpi-box"><div class="lbl">Responded</div><div class="val">${n}</div><div class="sub">of ${EXPECTED_ATTENDEES} expected</div></div>
       <div class="kpi-box ${pctResp>=60?'green':pctResp>=30?'blue':'neutral'}"><div class="lbl">Response rate</div><div class="val">${pctResp}<span style="font-size:.6em">%</span></div></div>
@@ -620,12 +632,16 @@ function renderAll(){
     </div>
   `;
 
+  // Some screens (commKpi, separator) render meaningful content even with 0 responses.
+  const SKIP_EMPTY_STATE = new Set(['commKpi','separator']);
+  const showEmpty = (n === 0 && !SKIP_EMPTY_STATE.has(ia.type));
+
   document.getElementById('mainArea').innerHTML = `
     <div class="slide-ref">${ia.tag} &middot; Slide ${ia.slide} &middot; Interaction ${STATE.cur+1} / ${INTERACTIONS.length}</div>
     <div class="tag-pill">${ia.tag}</div>
     <h1 class="section-title">${ia.title.replace(/—/g,'<span class="gold-grad">—</span>')}</h1>
     ${respBox}
-    ${n === 0 ? emptyState() : content}
+    ${showEmpty ? emptyState() : content}
     ${IS_ADMIN ? adminPanel(ia) : ''}
   `;
 
@@ -637,7 +653,10 @@ function renderAll(){
     if(ball) ball.addEventListener('click', ()=>resetAll());
   }
 
-  if(ia.type === 'text' || ia.type === 'commit'){
+  // Bind country picker on the Commercial KPIs Tracker view (presenter-side preview).
+  if(ia.type === 'commKpi') bindCommKpiTracker();
+
+  if(ia.type === 'text' || ia.type === 'text2' || ia.type === 'commit'){
     maybeRenderWordCloud();
   }
 }
@@ -682,6 +701,167 @@ function renderText(ia, entries){
           </div>
         </div>
       </div>
+    </div>
+  `;
+}
+
+// ---------- TEXT2 (Interaction 1: 2 free-text answers, side-by-side word clouds) ----------
+// Reads { expect, difference } from each attendee row. Renders two word clouds
+// on the SAME page \u2014 one per question \u2014 with a tiny live feed below each.
+function renderText2(ia, entries){
+  const valid = entries.filter(([,v])=>v && (v.expect || v.difference || v.text));
+  // Newest first.
+  const sorted = valid.sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  const expectItems = sorted.filter(([,v])=> (v.expect||v.text||'').trim().length);
+  const diffItems   = sorted.filter(([,v])=> (v.difference||'').trim().length);
+  return `
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <h3>Q1 &middot; What do you expect to learn?</h3>
+          <div id="wc-container-expect" class="wc-mini" aria-label="Word cloud — expectations"></div>
+          <div class="feed" id="feed-expect" style="max-height:160px;margin-top:10px">
+            ${expectItems.slice(0,30).map(([,v])=>`<div class="feed-item"><span class="ts">${tsFmt(v.ts)}</span>${escapeHtml(v.expect||v.text||'')}</div>`).join('') || '<div class="empty-state" style="padding:18px"><span class="big">\u00b7</span>No answers yet</div>'}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3>Q2 &middot; Biggest difference in your day-to-day</h3>
+          <div id="wc-container-difference" class="wc-mini" aria-label="Word cloud — biggest difference"></div>
+          <div class="feed" id="feed-difference" style="max-height:160px;margin-top:10px">
+            ${diffItems.slice(0,30).map(([,v])=>`<div class="feed-item"><span class="ts">${tsFmt(v.ts)}</span>${escapeHtml(v.difference||'')}</div>`).join('') || '<div class="empty-state" style="padding:18px"><span class="big">\u00b7</span>No answers yet</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- COMMERCIAL KPIs TRACKER (Interaction 8) ----------
+// Presenter-side preview: facilitator picks any country and sees the full KPI
+// table (AC 2025 / BGT 2026 / LE 2026) the audience is reviewing on their phones.
+// Source: window.__ABII_COMM_KPIS__ (loaded from abii-comm-kpis.js).
+let _i8kpiCountry = null;
+function renderCommKpiTracker(ia, entries){
+  const KPIS = (window.__ABII_COMM_KPIS__) || {};
+  const allCountries = Object.keys(KPIS).sort();
+  const countries = allCountries.filter(c => Array.isArray(KPIS[c]) && KPIS[c].length > 0);
+
+  // Tally how many attendees opened each country (so the facilitator sees demand).
+  const tally = {};
+  entries.forEach(([,v])=>{ if(v && v.country) tally[v.country] = (tally[v.country]||0)+1; });
+  const totalOpened = entries.length;
+
+  // Default the preview to the most-opened country, otherwise the first available.
+  if(!_i8kpiCountry || !KPIS[_i8kpiCountry]){
+    const top = Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];
+    _i8kpiCountry = top || countries[0] || null;
+  }
+
+  function fmt(v){
+    if(v === null || v === undefined || v === 0 || v === '') return '\u2014';
+    const n = Number(v);
+    if(!Number.isFinite(n)) return '\u2014';
+    if(Math.abs(n) >= 1000) return Math.round(n).toLocaleString('en-US');
+    return n.toFixed(Math.abs(n) < 10 ? 2 : 1);
+  }
+  function tone(le, bgt){
+    if(!bgt || bgt === 0) return '#888';
+    const r = (le||0) / bgt;
+    if(r >= 0.95) return '#4ade80';
+    if(r >= 0.70) return '#eab308';
+    return '#f87171';
+  }
+
+  const sel = _i8kpiCountry;
+  const rows = sel && KPIS[sel] ? KPIS[sel] : [];
+
+  let chips = countries.map(c=>{
+    const n = tally[c] || 0;
+    const isActive = c === sel;
+    return `<button type="button" class="ck-chip ${isActive?'active':''}" data-i8kpic="${escapeHtml(c)}">
+      ${escapeHtml(c)}${n?`<span class="ck-tally">${n}</span>`:''}
+    </button>`;
+  }).join('');
+
+  return `
+    <style>
+      .ck-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+      .ck-chip{padding:7px 14px;border-radius:22px;border:1px solid rgba(255,255,255,.15);background:rgba(20,20,20,.85);color:#ededed;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+      .ck-chip:hover{border-color:var(--gold);color:#fff}
+      .ck-chip.active{border-color:var(--gold);background:linear-gradient(135deg,rgba(212,168,67,.22),rgba(212,168,67,.06));color:var(--gold);box-shadow:0 0 12px rgba(212,168,67,.25)}
+      .ck-tally{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;border-radius:10px;font-size:10.5px;font-weight:800;background:rgba(74,222,128,.2);color:#4ade80;font-family:'JetBrains Mono',monospace}
+      .ck-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:rgba(8,8,8,.6);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);margin-top:12px}
+      .ck-table th{text-align:left;padding:12px 14px;color:#000;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold-l))}
+      .ck-table td{padding:11px 14px;color:#ddd;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+      .ck-table tr:last-child td{border-bottom:none}
+      .ck-table tr:hover td{background:rgba(212,168,67,.04)}
+      .ck-table .nm{font-weight:600;color:#fff}
+      .ck-table .meas{display:block;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;font-weight:500}
+      .ck-table .num{font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
+    </style>
+
+    <div class="card">
+      <h3>Pick a country to preview &middot; ${countries.length} available${totalOpened?`  &middot;  <span style="color:#4ade80;font-weight:700">${totalOpened} attendees opened a country</span>`:''}</h3>
+      <div class="ck-grid">${chips || '<span style="color:var(--muted)">No KPI data available.</span>'}</div>
+    </div>
+
+    ${sel && rows.length ? `
+      <div class="card card-gold">
+        <h3>${escapeHtml(sel)} &mdash; Commercial KPIs (${rows.length} indicators)</h3>
+        <table class="ck-table" aria-label="Commercial KPIs for ${escapeHtml(sel)}">
+          <thead>
+            <tr>
+              <th style="width:46%">KPI</th>
+              <th style="text-align:right">AC 2025</th>
+              <th style="text-align:right">BGT 2026</th>
+              <th style="text-align:right">LE 2026</th>
+              <th style="text-align:center">LE vs BGT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(k=>{
+              const col = tone(k.le26, k.bgt26);
+              const pct = (k.bgt26 && k.bgt26 !== 0) ? Math.round(((k.le26||0)/k.bgt26)*100) : null;
+              return `<tr>
+                <td class="nm">${escapeHtml(k.name)}<span class="meas">${escapeHtml(k.measure||'')}</span></td>
+                <td class="num" style="color:#aaa">${fmt(k.ac25)}</td>
+                <td class="num" style="color:#fff;font-weight:700">${fmt(k.bgt26)}</td>
+                <td class="num" style="color:${col};font-weight:700">${fmt(k.le26)}</td>
+                <td style="text-align:center;color:${col};font-weight:800;font-family:'JetBrains Mono',monospace">${pct===null?'\u2014':pct+'%'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <p style="margin-top:10px;font-size:11.5px;color:#888">
+          Color on LE 2026 vs BGT 2026: <span style="color:#4ade80;font-weight:700">\u25CF</span> &ge;95% &middot;
+          <span style="color:#eab308;font-weight:700">\u25CF</span> 70-94% &middot;
+          <span style="color:#f87171;font-weight:700">\u25CF</span> &lt;70%
+        </p>
+      </div>
+    ` : sel ? `<div class="empty-state"><span class="big">\u00b7</span>No KPI rows available for <strong>${escapeHtml(sel)}</strong>.</div>` : ''}
+  `;
+}
+
+function bindCommKpiTracker(){
+  document.querySelectorAll('[data-i8kpic]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      _i8kpiCountry = btn.dataset.i8kpic;
+      renderAll();
+    });
+  });
+}
+
+// ---------- SEPARATOR (Extra Interactions banner) ----------
+function renderSeparator(ia){
+  return `
+    <div class="card card-gold" style="text-align:center;padding:60px 30px">
+      <div style="font-size:80px;line-height:1;margin-bottom:16px">\u2728</div>
+      <h2 style="font-size:1.6em;color:#fff;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Extra Interactions</h2>
+      <p style="color:#bbb;font-size:15px;line-height:1.55;max-width:540px;margin:0 auto">
+        From here on, the next interactions are <strong style="color:var(--gold)">bonus content</strong> &mdash; only run if there is time left in the session.
+      </p>
     </div>
   `;
 }
@@ -1195,35 +1375,20 @@ function tokenize(text){
 let _wcLastSignature = '';
 let _wcGuard = false;
 
-function maybeRenderWordCloud(){
-  if(_wcGuard) return;
-  if(document.hidden) return;
-  const el = document.getElementById('wc-container');
+// Render a single canvas word cloud inside `el` using the wordcloud2.js API.
+function _drawWordCloud(el, text){
   if(!el || !window.WordCloud) return;
-  const ia = INTERACTIONS[STATE.cur];
-  if(ia.type !== 'text' && ia.type !== 'commit') return;
-  const bucket = STATE.data[ia.key] || {};
-  let text = '';
-  Object.values(bucket).forEach(v=>{
-    if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
-    if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
-  });
-  const signature = ia.key + '|' + text.length + '|' + text.slice(0,200);
-  if(signature === _wcLastSignature) return;
-  _wcLastSignature = signature;
   const list = tokenize(text);
   if(!list.length){
-    el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:40px auto"><span class="big">·</span>Word cloud will appear once attendees submit.</div>';
+    el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:20px auto;padding:30px"><span class="big">\u00b7</span>Word cloud will appear once attendees submit.</div>';
     return;
   }
   const rect = el.getBoundingClientRect();
   const canvas = document.createElement('canvas');
-  canvas.width  = Math.max(320, Math.floor(rect.width));
-  canvas.height = Math.max(240, Math.floor(rect.height));
-  _wcGuard = true;
+  canvas.width  = Math.max(280, Math.floor(rect.width));
+  canvas.height = Math.max(200, Math.floor(rect.height));
   el.innerHTML = '';
   el.appendChild(canvas);
-  setTimeout(()=>{ _wcGuard = false; }, 100);
   try{
     WordCloud(canvas, {
       list,
@@ -1249,6 +1414,48 @@ function maybeRenderWordCloud(){
       drawOutOfBound: false
     });
   }catch(e){ console.warn('[ABII] wordcloud render failed:', e); }
+}
+
+function maybeRenderWordCloud(){
+  if(_wcGuard) return;
+  if(document.hidden) return;
+  if(!window.WordCloud) return;
+  const ia = INTERACTIONS[STATE.cur];
+  if(ia.type !== 'text' && ia.type !== 'text2' && ia.type !== 'commit') return;
+  const bucket = STATE.data[ia.key] || {};
+
+  // text2: two clouds (expect + difference) on the same screen.
+  if(ia.type === 'text2'){
+    let textE = '', textD = '';
+    Object.values(bucket).forEach(v=>{
+      if(!v) return;
+      textE += ' ' + (v.expect || v.text || '');
+      textD += ' ' + (v.difference || '');
+    });
+    const sig = ia.key + '|2|' + textE.length + '|' + textD.length + '|' + textE.slice(0,160) + '|' + textD.slice(0,160);
+    if(sig === _wcLastSignature) return;
+    _wcLastSignature = sig;
+    _wcGuard = true;
+    _drawWordCloud(document.getElementById('wc-container-expect'),     textE);
+    _drawWordCloud(document.getElementById('wc-container-difference'), textD);
+    setTimeout(()=>{ _wcGuard = false; }, 100);
+    return;
+  }
+
+  // text / commit: single cloud (legacy behaviour).
+  const el = document.getElementById('wc-container');
+  if(!el) return;
+  let text = '';
+  Object.values(bucket).forEach(v=>{
+    if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
+    if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
+  });
+  const signature = ia.key + '|' + text.length + '|' + text.slice(0,200);
+  if(signature === _wcLastSignature) return;
+  _wcLastSignature = signature;
+  _wcGuard = true;
+  _drawWordCloud(el, text);
+  setTimeout(()=>{ _wcGuard = false; }, 100);
 }
 
 // =========================================================

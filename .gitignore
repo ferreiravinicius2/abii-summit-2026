@@ -52,3 +52,9 @@ node_modules/
 
 # Vercel local cache
 .vercel
+
+# Temp data extraction scripts and JSON intermediates
+inspect_*.js
+build_final.js
+FINAL_*.json
+_new_*.txt

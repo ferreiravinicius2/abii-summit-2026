@@ -344,7 +344,7 @@ const QUIZ_META = {
   i2:  {correct:2, options:['A','B','C','D'], labels:[
     'Unilateral by ABI HQ', 'Volume targets only', 'Joint plan — volume, investment, KPIs', 'Optional for smaller markets']},
   i4:  {correct:1, options:['A','B','C','D'], labels:[
-    'Highest volume', 'Highest PI × Brand Power', 'Longest time in market', 'Most SKUs']},
+    'Highest volume', 'MS Growth Opp × Brand Power', 'Longest time in market', 'Most SKUs']},
   // i6 and i7 graduated to multi2 (see I6_META / I7_META below).
   i10: {correct:2, options:['A','B','C','D'], labels:[
     'Fully executed', 'Product only — no real execution', 'Partially executed — bar branding', 'Over-executed — branded bar wrong']},
@@ -363,7 +363,7 @@ const I6_META = {
 };
 
 const I7_META = {
-  q1:{correct:2, options:['A','B','C','D'], labels:['50%','60%','70%','80%'],                                                                                                                   title:'Q1 \u00b7 BTL minimum for underdeveloped'},
+  q1:{correct:1, options:['A','B','C','D'], labels:['From day 1 onward','Only when distribution is established','Always invest more in ATL than BTL','In dev. markets, ATL > BTL'],               title:'Q1 \u00b7 When and how to invest in ATL?'},
   q2:{correct:0, options:['A','B','C','D'], labels:['ATL = mass awareness; BTL = POC / trade','ATL = trade promo; BTL = TV / digital','ATL = premium; BTL = value','ATL = paid; BTL = owned'],   title:'Q2 \u00b7 What\u2019s ATL vs BTL?'}
 };
 
@@ -973,7 +973,7 @@ function renderSmReality(ia, entries){
           correctAction: g.correctAction || '\u2014',
           nrSharePct: g.nrSharePct,
           invSharePct: g.invSharePct,
-          counts: {Increase:0, Reallocate:0, 'Keep as is':0},
+          counts: {Increase:0, Decrease:0, 'Keep as is':0},
           okN: 0, n: 0
         };
       }
@@ -1007,14 +1007,14 @@ function renderSmReality(ia, entries){
       <h3>Action picked per brand</h3>
       <p class="help">How attendees decided per brand vs the recommended action (in <span style="color:var(--gold)">gold</span>).</p>
       <div style="margin-top:10px;max-height:480px;overflow:auto">`;
-  const actionColor = (a)=> a==='Increase'?'#60a5fa':a==='Reallocate'?'#eab308':a==='Keep as is'?'#4ade80':'#888';
+  const actionColor = (a)=> a==='Increase'?'#60a5fa':a==='Decrease'?'#eab308':a==='Keep as is'?'#4ade80':'#888';
   Object.entries(byCountry).forEach(([country,c])=>{
     html += `<div style="margin-bottom:14px"><div style="color:var(--gold);font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">${escapeHtml(country)}</div>`;
     Object.entries(c.brands).forEach(([brand, b])=>{
       const okPct = b.n ? Math.round((b.okN/b.n)*100) : 0;
       const okCol = okPct>=70?'#4ade80':okPct>=40?'#60a5fa':'#f87171';
       const total = b.n || 1;
-      const segments = ['Increase','Reallocate','Keep as is'].map(act=>{
+      const segments = ['Increase','Decrease','Keep as is'].map(act=>{
         const cnt = b.counts[act] || 0;
         const pct = (cnt/total)*100;
         if(pct < 0.5) return '';

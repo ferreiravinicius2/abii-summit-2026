@@ -397,10 +397,10 @@ const BC = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('abi
 
 // ===== Embedded deck datasets (for interactions that mirror slides 15/86, 22/86, 74/86) =====
 // Full copy of DATA.megaBrands from abii-session2.html (Interaction 3 — Classify Brands).
-const DATA_MEGA = {"Puerto Rico":[{"brand":"Michelob Ultra","role":"Mega Brand","pi":170,"ms":16.3,"pwr":16.5},{"brand":"Corona","role":"Mega Brand","pi":176,"ms":7.3,"pwr":17.7},{"brand":"Modelo","role":"Expansion","pi":150,"ms":0.9,"pwr":8.2},{"brand":"Busch","role":"Sustain","pi":110,"ms":13,"pwr":0}],"Costa Rica":[{"brand":"Corona","role":"Mega Brand","pi":133,"ms":3.7,"pwr":16.2},{"brand":"Modelo","role":"Mega Brand","pi":111,"ms":1.1,"pwr":5.5},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0.1,"pwr":1.5},{"brand":"Busch","role":"Sustain","pi":65,"ms":0,"pwr":0},{"brand":"Natural Light","role":"Sustain","pi":0,"ms":0,"pwr":0},{"brand":"Stella Artois","role":"Expansion","pi":0,"ms":0,"pwr":0}],"New Zealand":[{"brand":"Corona","role":"Mega Brand","pi":140,"ms":5.6,"pwr":12},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0,"pwr":0}],"UAE":[{"brand":"Corona","role":"Mega Brand","pi":190,"ms":6.4,"pwr":0},{"brand":"Budweiser","role":"Expansion","pi":140,"ms":3.2,"pwr":0},{"brand":"Stella Artois","role":"Sustain","pi":160,"ms":2.2,"pwr":0}],"Israel":[{"brand":"Corona","role":"Mega Brand","pi":120,"ms":12.4,"pwr":12},{"brand":"Budweiser","role":"Expansion","pi":110,"ms":1.5,"pwr":2.3}],"Poland":[{"brand":"Corona","role":"Mega Brand","pi":239,"ms":0.7,"pwr":4.5},{"brand":"Stella Artois","role":"Expansion","pi":147,"ms":0.1,"pwr":1.2},{"brand":"Beck's","role":"Sustain","pi":126,"ms":0.1,"pwr":0.9}],"Thailand":[{"brand":"Corona","role":"Mega Brand","pi":201,"ms":0.2,"pwr":2.6},{"brand":"Budweiser","role":"Expansion","pi":126,"ms":1.3,"pwr":3},{"brand":"Hoegaarden","role":"Sustain","pi":0,"ms":0,"pwr":0}],"Philippines":[{"brand":"Corona","role":"Mega Brand","pi":160,"ms":0.1,"pwr":2.8},{"brand":"Budweiser","role":"Expansion","pi":127,"ms":0.1,"pwr":2.6}],"Romania":[{"brand":"Corona","role":"Mega Brand","pi":280,"ms":0.1,"pwr":6.1},{"brand":"Stella Artois","role":"Expansion","pi":196,"ms":0.6,"pwr":4.6},{"brand":"Beck's","role":"Sustain","pi":153,"ms":1.4,"pwr":5.2}],"Venezuela":[{"brand":"Corona","role":"Mega Brand","pi":218,"ms":2.1,"pwr":6.9},{"brand":"Budweiser","role":"Expansion","pi":147,"ms":0,"pwr":2.2},{"brand":"Modelo","role":"Expansion","pi":0,"ms":0,"pwr":0},{"brand":"Presidente","role":"Sustain","pi":150,"ms":0.1,"pwr":1.9}],"Greece":[{"brand":"Corona","role":"Mega Brand","pi":258,"ms":1,"pwr":4.4},{"brand":"Stella Artois","role":"Expansion","pi":119,"ms":0.6,"pwr":2.1}],"Croatia":[{"brand":"Corona","role":"Mega Brand","pi":0,"ms":0,"pwr":0},{"brand":"Other OB","role":"Expansion","pi":0,"ms":0,"pwr":0}]};
+const DATA_MEGA = {"Puerto Rico":[{"brand":"Michelob Ultra","role":"Mega Brand","pi":170,"ms":16.3,"pwr":16.5},{"brand":"Corona","role":"Mega Brand","pi":176,"ms":7.3,"pwr":17.7},{"brand":"Modelo","role":"Expansion","pi":150,"ms":0.9,"pwr":8.2},{"brand":"Busch","role":"Sustain","pi":110,"ms":13,"pwr":0}],"Costa Rica":[{"brand":"Corona","role":"Mega Brand","pi":133,"ms":3.7,"pwr":16.2},{"brand":"Modelo","role":"Mega Brand","pi":111,"ms":1.1,"pwr":5.5},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0.1,"pwr":1.5},{"brand":"Busch","role":"Sustain","pi":65,"ms":0,"pwr":0},{"brand":"Natural Light","role":"Sustain","pi":0,"ms":0,"pwr":0},{"brand":"Stella Artois","role":"Expansion","pi":0,"ms":0,"pwr":0}],"New Zealand":[{"brand":"Corona","role":"Mega Brand","pi":140,"ms":5.6,"pwr":12},{"brand":"Michelob Ultra","role":"Expansion","pi":115,"ms":0,"pwr":0}],"UAE":[{"brand":"Corona","role":"Mega Brand","pi":190,"ms":6.4,"pwr":0},{"brand":"Budweiser","role":"Expansion","pi":140,"ms":3.2,"pwr":0},{"brand":"Stella Artois","role":"Sustain","pi":160,"ms":2.2,"pwr":0}],"Israel":[{"brand":"Corona","role":"Mega Brand","pi":120,"ms":12.4,"pwr":12},{"brand":"Budweiser","role":"Expansion","pi":110,"ms":1.5,"pwr":2.3}],"Poland":[{"brand":"Corona","role":"Mega Brand","pi":239,"ms":0.7,"pwr":4.5},{"brand":"Stella Artois","role":"Expansion","pi":147,"ms":0.1,"pwr":1.2},{"brand":"Beck's","role":"Sustain","pi":126,"ms":0.1,"pwr":0.9}],"Thailand":[{"brand":"Corona","role":"Mega Brand","pi":201,"ms":0.2,"pwr":2.6},{"brand":"Budweiser","role":"Expansion","pi":126,"ms":1.3,"pwr":3},{"brand":"Hoegaarden","role":"Sustain","pi":0,"ms":0,"pwr":0}],"Philippines":[{"brand":"Corona","role":"Mega Brand","pi":160,"ms":0.1,"pwr":2.8},{"brand":"Budweiser","role":"Expansion","pi":127,"ms":0.1,"pwr":2.6}],"Romania":[{"brand":"Corona","role":"Mega Brand","pi":280,"ms":0.1,"pwr":6.1},{"brand":"Stella Artois","role":"Expansion","pi":196,"ms":0.6,"pwr":4.6},{"brand":"Beck's","role":"Sustain","pi":153,"ms":1.4,"pwr":5.2}],"Venezuela":[{"brand":"Corona","role":"Mega Brand","pi":218,"ms":2.1,"pwr":6.9},{"brand":"Budweiser","role":"Expansion","pi":147,"ms":0,"pwr":2.2},{"brand":"Modelo","role":"Expansion","pi":0,"ms":0,"pwr":0},{"brand":"Presidente","role":"Sustain","pi":150,"ms":0.1,"pwr":1.9}],"Greece":[{"brand":"Corona","role":"Mega Brand","pi":258,"ms":1,"pwr":4.4},{"brand":"Stella Artois","role":"Expansion","pi":119,"ms":0.6,"pwr":2.1}],"Croatia":[{"brand":"Corona","role":"Mega Brand","pi":0,"ms":0,"pwr":0},{"brand":"Other OB","role":"Expansion","pi":0,"ms":0,"pwr":0}],"Australia":[{"brand":"Corona","role":"Mega Brand","pi":155,"ms":2.8,"pwr":10},{"brand":"Stella Artois","role":"Expansion","pi":108,"ms":2.9,"pwr":0},{"brand":"Budweiser","role":"Sustain","pi":105,"ms":0.1,"pwr":0}],"Morocco":[{"brand":"Corona","role":"Mega Brand","pi":0,"ms":0,"pwr":0},{"brand":"Budweiser","role":"Sustain","pi":0,"ms":0,"pwr":0}]};
 
 // Full copy of DATA.smRatios (Interaction 5 — S&M Reality).
-const DATA_SM = {"Puerto Rico":{"marketType":"Sustain","totalNR":108.78,"atlPct":30.8,"btlPct":69.2,"brands":[{"brand":"Michelob Ultra","role":"Mega Brand","nr":67.06,"smDme":2.99,"ratio":0.79,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Corona","role":"Mega Brand","nr":22.13,"smDme":2.18,"ratio":1.74,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Modelo","role":"Expansion","nr":3.09,"smDme":0.47,"ratio":2.69,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":13.78,"smDme":0.35,"ratio":0.45,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Costa Rica":{"marketType":"Sustain","totalNR":33.64,"atlPct":34.8,"btlPct":65.2,"brands":[{"brand":"Corona","role":"Mega Brand","nr":15.62,"smDme":3.5,"ratio":0.96,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Modelo","role":"Mega Brand","nr":5.55,"smDme":1.91,"ratio":1.48,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Michelob Ultra","role":"Expansion","nr":2.24,"smDme":0.74,"ratio":1.42,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":4.09,"smDme":0.37,"ratio":0.39,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Natural Light","role":"Sustain","nr":3.87,"smDme":0.37,"ratio":0.41,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":1.43,"smDme":0.74,"ratio":2.22,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"New Zealand":{"marketType":"Sustain","totalNR":36.35,"atlPct":21.4,"btlPct":78.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":23.94,"smDme":2.05,"ratio":0.91,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Michelob Ultra","role":"Expansion","nr":0.8,"smDme":0.28,"ratio":3.72,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"UAE":{"marketType":"Sustain","totalNR":40,"atlPct":75.4,"btlPct":24.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":14.64,"smDme":1.39,"ratio":0.74,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":7.69,"smDme":1.05,"ratio":1.06,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Stella Artois","role":"Sustain","nr":4.55,"smDme":1.02,"ratio":1.74,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Israel":{"marketType":"Sustain","totalNR":32.6,"atlPct":97.2,"btlPct":2.8,"brands":[{"brand":"Corona","role":"Mega Brand","nr":18.11,"smDme":0.7,"ratio":0.59,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":2.05,"smDme":0.63,"ratio":4.66,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"Poland":{"marketType":"Mega","totalNR":42.78,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":32.74,"smDme":17.83,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":2.26,"smDme":1.23,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Beck's","role":"Sustain","nr":5.34,"smDme":2.91,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Thailand":{"marketType":"Mega","totalNR":17.81,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.54,"smDme":0.05,"ratio":1.71,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":6.41,"smDme":0.02,"ratio":0.49,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Hoegaarden","role":"Sustain","nr":6.16,"smDme":0.04,"ratio":1.01,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Philippines":{"marketType":"Mega","totalNR":6.36,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":3.49,"smDme":17.54,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":1.78,"smDme":8.94,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Romania":{"marketType":"Mega","totalNR":14.17,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":12.7,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Beck's","role":"Sustain","nr":0,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Venezuela":{"marketType":"Mega","totalNR":14.6,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":10.4,"smDme":0.25,"ratio":1.34,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Modelo","role":"Expansion","nr":0.82,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Presidente","role":"Sustain","nr":2.73,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Greece":{"marketType":"Image","totalNR":12.51,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":7.24,"smDme":17.41,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":3.91,"smDme":9.41,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Croatia":{"marketType":"Image","totalNR":4.64,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.1,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Other OB","role":"Expansion","nr":0.54,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"}]}};
+const DATA_SM = {"Puerto Rico":{"marketType":"Sustain","totalNR":108.78,"atlPct":30.8,"btlPct":69.2,"brands":[{"brand":"Michelob Ultra","role":"Mega Brand","nr":67.06,"smDme":2.99,"ratio":0.79,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Corona","role":"Mega Brand","nr":22.13,"smDme":2.18,"ratio":1.74,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Modelo","role":"Expansion","nr":3.09,"smDme":0.47,"ratio":2.69,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":13.78,"smDme":0.35,"ratio":0.45,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Costa Rica":{"marketType":"Sustain","totalNR":33.64,"atlPct":34.8,"btlPct":65.2,"brands":[{"brand":"Corona","role":"Mega Brand","nr":15.62,"smDme":3.5,"ratio":0.96,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Modelo","role":"Mega Brand","nr":5.55,"smDme":1.91,"ratio":1.48,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Michelob Ultra","role":"Expansion","nr":2.24,"smDme":0.74,"ratio":1.42,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"},{"brand":"Busch","role":"Sustain","nr":4.09,"smDme":0.37,"ratio":0.39,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Natural Light","role":"Sustain","nr":3.87,"smDme":0.37,"ratio":0.41,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":1.43,"smDme":0.74,"ratio":2.22,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"New Zealand":{"marketType":"Sustain","totalNR":36.35,"atlPct":21.4,"btlPct":78.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":23.94,"smDme":2.05,"ratio":0.91,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Michelob Ultra","role":"Expansion","nr":0.8,"smDme":0.28,"ratio":3.72,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"UAE":{"marketType":"Sustain","totalNR":40,"atlPct":75.4,"btlPct":24.6,"brands":[{"brand":"Corona","role":"Mega Brand","nr":14.64,"smDme":1.39,"ratio":0.74,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":7.69,"smDme":1.05,"ratio":1.06,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Stella Artois","role":"Sustain","nr":4.55,"smDme":1.02,"ratio":1.74,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Israel":{"marketType":"Sustain","totalNR":32.6,"atlPct":97.2,"btlPct":2.8,"brands":[{"brand":"Corona","role":"Mega Brand","nr":18.11,"smDme":0.7,"ratio":0.59,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":2.05,"smDme":0.63,"ratio":4.66,"minRatio":1,"maxRatio":1.29,"status":"YELLOW"}]},"Poland":{"marketType":"Mega","totalNR":42.78,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":32.74,"smDme":17.83,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":2.26,"smDme":1.23,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Beck's","role":"Sustain","nr":5.34,"smDme":2.91,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Thailand":{"marketType":"Mega","totalNR":17.81,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.54,"smDme":0.05,"ratio":1.71,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":6.41,"smDme":0.02,"ratio":0.49,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Hoegaarden","role":"Sustain","nr":6.16,"smDme":0.04,"ratio":1.01,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Philippines":{"marketType":"Mega","totalNR":6.36,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":3.49,"smDme":17.54,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Expansion","nr":1.78,"smDme":8.94,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Romania":{"marketType":"Mega","totalNR":14.17,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":12.7,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Beck's","role":"Sustain","nr":0,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Venezuela":{"marketType":"Mega","totalNR":14.6,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":10.4,"smDme":0.25,"ratio":1.34,"minRatio":1.3,"maxRatio":2.5,"status":"GREEN"},{"brand":"Budweiser","role":"Expansion","nr":0,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Modelo","role":"Expansion","nr":0.82,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"},{"brand":"Presidente","role":"Sustain","nr":2.73,"smDme":0,"ratio":0,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Greece":{"marketType":"Image","totalNR":12.51,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":7.24,"smDme":17.41,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":3.91,"smDme":9.41,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Croatia":{"marketType":"Image","totalNR":4.64,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.1,"smDme":0,"ratio":0,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Other OB","role":"Expansion","nr":0.54,"smDme":0,"ratio":0,"minRatio":1,"maxRatio":1.29,"status":"RED"}]},"Morocco":{"marketType":"Expansion","totalNR":5.08,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":2.54,"smDme":0.318,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Sustain","nr":2.54,"smDme":0.318,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Turkey":{"marketType":"Expansion","totalNR":20.25,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":6.75,"smDme":2.217,"ratio":2.63,"minRatio":1.3,"maxRatio":2.5,"status":"YELLOW"},{"brand":"Beck's","role":"Sustain","nr":6.75,"smDme":0.063,"ratio":0.07,"minRatio":0.7,"maxRatio":0.99,"status":"RED"},{"brand":"Jupiler 0,0","role":"Sustain","nr":6.75,"smDme":0.251,"ratio":0.3,"minRatio":0.7,"maxRatio":0.99,"status":"RED"}]},"Saudi Arabia":{"marketType":"Tail","totalNR":6.84,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona Cero","role":"Mega Brand","nr":3.42,"smDme":0.406,"ratio":0.95,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser Zero","role":"Expansion","nr":3.42,"smDme":0.45,"ratio":1.05,"minRatio":1,"maxRatio":1.29,"status":"GREEN"}]},"Portugal":{"marketType":"Mega","totalNR":12.81,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":4.27,"smDme":0.533,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Stella Artois","role":"Expansion","nr":4.27,"smDme":0.533,"ratio":1,"minRatio":1,"maxRatio":1.29,"status":"GREEN"},{"brand":"Beck's","role":"Sustain","nr":4.27,"smDme":0.533,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]},"Cambodia":{"marketType":"Sustain","totalNR":3.2,"atlPct":0,"btlPct":100,"brands":[{"brand":"Corona","role":"Mega Brand","nr":1.6,"smDme":0.2,"ratio":1,"minRatio":1.3,"maxRatio":2.5,"status":"RED"},{"brand":"Budweiser","role":"Sustain","nr":1.6,"smDme":0.2,"ratio":1,"minRatio":0.7,"maxRatio":0.99,"status":"YELLOW"}]}};
 
 // Full copy of DATA.commKpis (Interaction 13 — full KPI table). All 13 KPI rows per country.
 // Loaded from a separate inline file to keep this file readable.
@@ -672,8 +672,41 @@ const INTERACTIONS = [
     render(){
       const a = STATE.answers.i3;
       if(a){
-        const summary = (a.picks || []).map(p=>`${p.brand} &rarr; <strong>${p.role}</strong>${p.correct===true?' <span style="color:#4ade80">\u2713</span>':p.correct===false?` <span style="color:#f87171">\u2717 ${p.actual}</span>`:''}`).join('<br>');
-        return successBlock(`Submitted \u2014 ${a.score} / ${a.total} correct`, summary || `Country: <strong>${a.country||'\u2014'}</strong>`);
+        // Already submitted — show the same color-coded per-brand layout as the check view.
+        const brandsArr = DATA_MEGA[a.country] || [];
+        const roleColors = {'Mega Brand':'var(--gold)','Expansion':'#3b82f6','Sustain':'#888','Tail':'#ef4444'};
+        let html = `
+          <p class="prompt"><span style="color:#4ade80;font-weight:800">\u2713 Submitted</span> &mdash; Country: <strong>${a.country||'\u2014'}</strong></p>
+          <div class="country-label">Your classification</div>`;
+        brandsArr.forEach((b)=>{
+          const userPick = (a.picks.find(p=>p.brand===b.brand)||{}).role || null;
+          const correct = userPick === b.role;
+          const isCheckedCorrect = correct;
+          const isCheckedWrong = userPick && !correct;
+          html += `
+            <div class="card" style="margin-bottom:10px;padding:12px 14px;${isCheckedCorrect?'border-color:rgba(34,197,94,.5);background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(34,197,94,.02))':''}${isCheckedWrong?'border-color:rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.02))':''}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <strong style="color:#fff;font-size:14px">${b.brand}</strong>
+                ${correct ? '<span style="color:#4ade80;font-weight:800;font-size:12px">\u2713 CORRECT</span>' : `<span style="color:#f87171;font-weight:800;font-size:12px">\u2717 ${b.role}</span>`}
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:#aaa;margin-bottom:8px">
+                <span>PI: <strong style="color:#fff">${b.pi||'\u2014'}</strong></span>
+                <span>\u2022</span>
+                <span>Share: <strong style="color:#fff">${b.ms||'\u2014'}%</strong></span>
+                <span>\u2022</span>
+                <span>Power: <strong style="color:#fff">${b.pwr||'\u2014'}</strong></span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                ${['Mega Brand','Expansion','Sustain','Tail'].map(r=>{
+                  const sel = userPick === r;
+                  const bg = sel ? `background:${roleColors[r]};color:#000;border-color:${roleColors[r]}` : `border-color:${roleColors[r]};color:${roleColors[r]};opacity:.55`;
+                  return `<button class="btn" style="min-height:40px;font-size:11px;padding:8px 10px;${bg}" type="button" disabled>${r}</button>`;
+                }).join('')}
+              </div>
+            </div>`;
+        });
+        html += `<div class="card ${a.score===a.total?'card-green':'card-gold'}" style="margin-top:12px;text-align:center"><p style="font-weight:800;font-size:16px;color:#fff">${a.score} / ${a.total} correct</p><p style="font-size:12px;color:#aaa;margin-top:6px">${a.score===a.total?'Perfect! You nailed every classification.':'Focus on where PI \u00d7 Power meet market share.'}</p><p style="font-size:11px;color:#4ade80;margin-top:6px;font-weight:700">\u2713 Submitted to the dashboard</p></div>`;
+        return html;
       }
       if(!STATE._tmp_i3) STATE._tmp_i3 = {country:null, picks:{}, checked:false};
       const st = STATE._tmp_i3;
@@ -719,11 +752,10 @@ const INTERACTIONS = [
         });
         const allPicked = brands.every((_,i)=>st.picks[i]);
         if(!st.checked){
-          html += `<button class="btn btn-fill btn-wide" id="i3-check" type="button" ${!allPicked?'disabled':''} style="margin-top:10px">Check my answers</button>`;
+          html += `<button class="btn btn-fill btn-wide" id="i3-check" type="button" ${!allPicked?'disabled':''} style="margin-top:10px">Check &amp; Submit my answers</button>`;
         } else {
           const score = brands.filter((b,i)=>st.picks[i]===b.role).length;
-          html += `<div class="card ${score===brands.length?'card-green':'card-gold'}" style="margin-top:12px;text-align:center"><p style="font-weight:800;font-size:16px;color:#fff">${score} / ${brands.length} correct</p><p style="font-size:12px;color:#aaa;margin-top:6px">${score===brands.length?'Perfect! You nailed every classification.':'Focus on where PI \u00d7 Power meet market share.'}</p></div>`;
-          html += `<button class="btn btn-fill btn-wide" id="i3-submit" type="button" style="margin-top:10px">Submit my answers</button>`;
+          html += `<div class="card ${score===brands.length?'card-green':'card-gold'}" style="margin-top:12px;text-align:center"><p style="font-weight:800;font-size:16px;color:#fff">${score} / ${brands.length} correct</p><p style="font-size:12px;color:#aaa;margin-top:6px">${score===brands.length?'Perfect! You nailed every classification.':'Focus on where PI \u00d7 Power meet market share.'}</p><p style="font-size:11px;color:#4ade80;margin-top:6px;font-weight:700">\u2713 Submitted to the dashboard</p></div>`;
         }
       } else {
         html += `<p class="hint" style="margin-top:12px">Pick a country to start the exercise.</p>`;
@@ -747,13 +779,12 @@ const INTERACTIONS = [
         });
       });
       const chk = document.getElementById('i3-check');
-      if(chk) chk.addEventListener('click', ()=>{ st.checked = true; renderSlide(); });
-      const sub = document.getElementById('i3-submit');
-      if(sub) sub.addEventListener('click', ()=>{
-        const brands = DATA_MEGA[st.country] || [];
-        const picks = brands.map((b,i)=>({brand:b.brand, role:st.picks[i]||null, actual:b.role, correct: st.picks[i]===b.role}));
-        const score = picks.filter(p=>p.correct).length;
-        submitAnswer('i3', {country:st.country, picks, score, total:brands.length});
+      if(chk) chk.addEventListener('click', ()=>{
+        st.checked = true;
+        const brandsArr = DATA_MEGA[st.country] || [];
+        const picksArr = brandsArr.map((b,i)=>({brand:b.brand, role:st.picks[i]||null, actual:b.role, correct: st.picks[i]===b.role}));
+        const score = picksArr.filter(p=>p.correct).length;
+        submitAnswer('i3', {country:st.country, picks:picksArr, score, total:brandsArr.length});
         STATE._tmp_i3 = null;
       });
     }
@@ -767,12 +798,12 @@ const INTERACTIONS = [
       const a = STATE.answers.i4;
       const options = [
         {t:'Highest volume in the market', c:false},
-        {t:'Highest Price Index × Brand Power combination', c:true},
+        {t:'Market Share Growth Opportunity × Brand Power combination', c:true},
         {t:'Longest time in the market', c:false},
         {t:'Most SKUs in the portfolio', c:false}
       ];
       return quizBlock('What criteria determine Mega Brand status?', options, a,
-        'Mega Brand status is determined by the combination of Price Index and Brand Power — not volume alone. A brand can have low volume but high strategic value.');
+        'Mega Brand status is determined by the combination of Market Share Growth Opportunity and Brand Power — not volume alone. A brand can have low volume but high strategic value when the headroom to grow share is large and brand power is strong.');
     },
     bind(){ bindQuiz('i4'); }
   },
@@ -795,7 +826,7 @@ const INTERACTIONS = [
       const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
 
       let html = `
-        <p class="prompt">Compare each brand's <strong>NR share</strong> with its <strong>S&amp;M+DME share</strong>. If the brand is under-invested, <strong>Increase</strong>. If over-invested in a Sustain role, <strong>Reallocate</strong> to a Mega/Expansion brand. If balanced, <strong>Keep as is</strong>.</p>
+        <p class="prompt">Compare each brand's <strong>NR share</strong> with its <strong>S&amp;M+DME share</strong>. If the brand is under-invested, <strong>Increase</strong>. If over-invested, <strong>Decrease</strong>. If balanced, <strong>Keep as is</strong>.</p>
         <div class="country-label">1. Pick your country</div>
         <div class="country-grid" role="list">
           ${countries.map(c=>`<button type="button" role="listitem" class="country-btn ${st.country===c?'active':''}" data-i5c="${c}">${c}</button>`).join('')}
@@ -818,14 +849,13 @@ const INTERACTIONS = [
           const invSharePct = (b.smDme / totalInv) * 100;
           const shareDiff   = invSharePct - nrSharePct; // >0 over-invested, <0 under-invested
           // Correct action heuristic. Stays simple and pedagogical:
-          //  - Sustain over-invested by 5+ pp -> Reallocate (move $ to Mega/Expansion)
-          //  - Under-invested by 5+ pp        -> Increase
-          //  - Else                           -> Keep as is
+          //  - Over-invested by 5+ pp  -> Decrease (free up $ for Mega/Expansion)
+          //  - Under-invested by 5+ pp -> Increase
+          //  - Else                    -> Keep as is
           let correctAction;
-          if(shareDiff <= -5)                           correctAction = 'Increase';
-          else if(shareDiff >= 5 && b.role==='Sustain') correctAction = 'Reallocate';
-          else if(shareDiff >= 5)                       correctAction = 'Reallocate';
-          else                                          correctAction = 'Keep as is';
+          if(shareDiff <= -5)      correctAction = 'Increase';
+          else if(shareDiff >= 5)  correctAction = 'Decrease';
+          else                     correctAction = 'Keep as is';
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
           // Color the share gap pill: red if invested far less than fair, blue if far more, neutral if close.
           const gapTone = shareDiff <= -5 ? '#f87171' : shareDiff >= 5 ? '#eab308' : '#4ade80';
@@ -854,7 +884,7 @@ const INTERACTIONS = [
               </div>
               <div style="font-size:11px;color:${gapTone};font-weight:700;margin-bottom:10px;letter-spacing:.04em">Gap: ${gapLbl}</div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                ${['Increase','Reallocate','Keep as is'].map(act=>{
+                ${['Increase','Decrease','Keep as is'].map(act=>{
                   const isPick = pick === act;
                   const bg = isPick ? 'rgba(212,168,67,.22)' : 'rgba(255,255,255,.04)';
                   const bd = isPick ? 'rgba(212,168,67,.6)'  : 'rgba(255,255,255,.10)';
@@ -900,9 +930,9 @@ const INTERACTIONS = [
           const invSharePct = (b.smDme / totalInv) * 100;
           const shareDiff   = invSharePct - nrSharePct;
           let correctAction;
-          if(shareDiff <= -5)                           correctAction = 'Increase';
-          else if(shareDiff >= 5)                       correctAction = 'Reallocate';
-          else                                          correctAction = 'Keep as is';
+          if(shareDiff <= -5)      correctAction = 'Increase';
+          else if(shareDiff >= 5)  correctAction = 'Decrease';
+          else                     correctAction = 'Keep as is';
           const action = st.decisions[i];
           return {
             brand: b.brand, role: b.role,
@@ -988,10 +1018,10 @@ const INTERACTIONS = [
       }
       const st = STATE._tmp_i7 || {q1:null, q2:null};
       const Q1_opts = [
-        {t:'50%', c:false},
-        {t:'60%', c:false},
-        {t:'70%', c:true},
-        {t:'80%', c:false}
+        {t:'From day 1 onward.', c:false},
+        {t:'Only when distribution is established.', c:true},
+        {t:'I should always invest more in ATL than in BTL, since ATL drives awareness.', c:false},
+        {t:'In developing markets, ATL investments are more important than BTL investments.', c:false}
       ];
       const Q2_opts = [
         {t:'ATL is for mass awareness (TV, radio, OOH); BTL is for in-store, POC and trade execution', c:true},
@@ -1003,7 +1033,7 @@ const INTERACTIONS = [
         <p class="prompt">Two questions on how we split investment between Above-the-Line and Below-the-Line.</p>
         <div class="qblock">
           <div class="qnum">Question 1 / 2</div>
-          <div class="qtxt">For a Mega Brand in an <strong>underdeveloped market</strong>, what is the minimum BTL allocation?</div>
+          <div class="qtxt">When and How should I invest in <strong>ATL</strong>?</div>
           ${renderOptList('i7q1', Q1_opts, st.q1)}
         </div>
         <div class="qblock">

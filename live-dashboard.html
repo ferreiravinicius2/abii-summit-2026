@@ -1384,6 +1384,11 @@ function _drawWordCloud(el, text){
     el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:20px auto;padding:30px"><span class="big">\u00b7</span>Word cloud will appear once attendees submit.</div>';
     return;
   }
+  // Abort any in-flight WordCloud() that might still be drawing into the
+  // previous canvas (the lib uses async setTimeout loops internally; without
+  // an explicit abort, two concurrent draws can race during burst submits).
+  const prev = el.querySelector('canvas');
+  if(prev){ try{ prev.dispatchEvent(new Event('wordcloudabort')); }catch(_){} }
   // Use offsetWidth / offsetHeight (works even before paint, unlike
   // getBoundingClientRect on freshly-injected nodes). Fall back to a sane
   // default if the container hasn't laid out yet.
@@ -1426,13 +1431,18 @@ function _drawWordCloud(el, text){
   }catch(e){ console.warn('[ABII] wordcloud render failed:', e); }
 }
 
-// Triggered by renderAll() after #mainArea is rebuilt. No caching, no guards
-// — every renderAll repaints the cloud(s). The underlying canvas API is fast
-// enough for our scale (≤100 attendees, ≤60 unique tokens after tokenize()).
-function maybeRenderWordCloud(){
+// Triggered by renderAll() after #mainArea is rebuilt. We throttle the actual
+// draw to ~600ms so a burst of 100 simultaneous submits triggers ~2 redraws/s
+// of the cloud (visually fluid, ~30x cheaper than redrawing every frame).
+// The non-cloud parts of the dashboard (KPI boxes, feeds, country chips) still
+// update at full frame rate via renderAll itself.
+let _wcThrottleTimer = null;
+let _wcLastDraw = 0;
+function _wcDrawNow(){
+  _wcThrottleTimer = null;
+  _wcLastDraw = Date.now();
   if(document.hidden) return;
   if(!window.WordCloud){
-    // Library still loading — try again next frame.
     requestAnimationFrame(maybeRenderWordCloud);
     return;
   }
@@ -1463,6 +1473,17 @@ function maybeRenderWordCloud(){
     if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
   });
   _drawWordCloud(el, text);
+}
+function maybeRenderWordCloud(){
+  // First call after a quiet period: draw immediately so the very first answer
+  // shows up instantly. Subsequent calls within 600ms are coalesced.
+  const elapsed = Date.now() - _wcLastDraw;
+  if(elapsed >= 600 && !_wcThrottleTimer){
+    _wcDrawNow();
+    return;
+  }
+  if(_wcThrottleTimer) return;
+  _wcThrottleTimer = setTimeout(_wcDrawNow, 600 - elapsed);
 }
 
 // =========================================================

@@ -657,7 +657,10 @@ function renderAll(){
   if(ia.type === 'commKpi') bindCommKpiTracker();
 
   if(ia.type === 'text' || ia.type === 'text2' || ia.type === 'commit'){
-    maybeRenderWordCloud();
+    // renderAll just replaced #mainArea — pass force=true so the cloud
+    // redraws even when the underlying text hasn't changed since the last
+    // frame (otherwise the freshly-injected empty container would stay blank).
+    maybeRenderWordCloud(true);
   }
 }
 
@@ -1383,7 +1386,15 @@ function _drawWordCloud(el, text){
     el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:20px auto;padding:30px"><span class="big">\u00b7</span>Word cloud will appear once attendees submit.</div>';
     return;
   }
+  // Layout might not be settled yet (e.g. just after innerHTML on the parent).
+  // If the container has zero width, defer one frame so getBoundingClientRect
+  // returns the real size — otherwise the canvas is 280x200 inside a 500-wide
+  // card and looks empty / cropped.
   const rect = el.getBoundingClientRect();
+  if(rect.width < 50){
+    requestAnimationFrame(()=>_drawWordCloud(el, text));
+    return;
+  }
   const canvas = document.createElement('canvas');
   canvas.width  = Math.max(280, Math.floor(rect.width));
   canvas.height = Math.max(200, Math.floor(rect.height));
@@ -1416,7 +1427,11 @@ function _drawWordCloud(el, text){
   }catch(e){ console.warn('[ABII] wordcloud render failed:', e); }
 }
 
-function maybeRenderWordCloud(){
+// `force` skips the signature short-circuit. We pass force=true whenever the
+// caller knows the DOM was just rebuilt (renderAll replaced #mainArea), since
+// in that case the previous canvas was wiped even though the underlying text
+// is identical to the last cached signature.
+function maybeRenderWordCloud(force){
   if(_wcGuard) return;
   if(document.hidden) return;
   if(!window.WordCloud) return;
@@ -1426,18 +1441,24 @@ function maybeRenderWordCloud(){
 
   // text2: two clouds (expect + difference) on the same screen.
   if(ia.type === 'text2'){
+    const elE = document.getElementById('wc-container-expect');
+    const elD = document.getElementById('wc-container-difference');
+    if(!elE || !elD) return;
     let textE = '', textD = '';
     Object.values(bucket).forEach(v=>{
       if(!v) return;
       textE += ' ' + (v.expect || v.text || '');
       textD += ' ' + (v.difference || '');
     });
+    // If either container has no canvas yet, the DOM was just rebuilt and we
+    // MUST redraw even if the signature matches the previous frame.
+    const domDirty = !elE.querySelector('canvas') || !elD.querySelector('canvas');
     const sig = ia.key + '|2|' + textE.length + '|' + textD.length + '|' + textE.slice(0,160) + '|' + textD.slice(0,160);
-    if(sig === _wcLastSignature) return;
+    if(!force && !domDirty && sig === _wcLastSignature) return;
     _wcLastSignature = sig;
     _wcGuard = true;
-    _drawWordCloud(document.getElementById('wc-container-expect'),     textE);
-    _drawWordCloud(document.getElementById('wc-container-difference'), textD);
+    _drawWordCloud(elE, textE);
+    _drawWordCloud(elD, textD);
     setTimeout(()=>{ _wcGuard = false; }, 100);
     return;
   }
@@ -1450,8 +1471,9 @@ function maybeRenderWordCloud(){
     if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
     if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
   });
+  const domDirty = !el.querySelector('canvas');
   const signature = ia.key + '|' + text.length + '|' + text.slice(0,200);
-  if(signature === _wcLastSignature) return;
+  if(!force && !domDirty && signature === _wcLastSignature) return;
   _wcLastSignature = signature;
   _wcGuard = true;
   _drawWordCloud(el, text);

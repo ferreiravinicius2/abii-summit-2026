@@ -657,10 +657,9 @@ function renderAll(){
   if(ia.type === 'commKpi') bindCommKpiTracker();
 
   if(ia.type === 'text' || ia.type === 'text2' || ia.type === 'commit'){
-    // renderAll just replaced #mainArea — pass force=true so the cloud
-    // redraws even when the underlying text hasn't changed since the last
-    // frame (otherwise the freshly-injected empty container would stay blank).
-    maybeRenderWordCloud(true);
+    // Defer one frame so the freshly-injected #wc-container* divs have a
+    // settled layout (offsetWidth/offsetHeight reflect the real CSS size).
+    requestAnimationFrame(maybeRenderWordCloud);
   }
 }
 
@@ -1371,12 +1370,11 @@ function tokenize(text){
   words.forEach(w=>{ freq[w] = (freq[w]||0)+1; });
   return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60);
 }
-// Word cloud: re-render only when the underlying text actually changes, and
-// only when the page is visible. The previous MutationObserver on document.body
-// caused an infinite feedback loop (renderAll modifies DOM → observer fires →
-// maybeRenderWordCloud re-renders → DOM changes again → loop).
-let _wcLastSignature = '';
-let _wcGuard = false;
+// Word cloud rendering — simplified.
+// Approach: every time renderAll() finishes, we schedule a redraw on the next
+// animation frame. No signature cache, no guards. Drawing is cheap and the
+// renderText2 / renderText / renderCommit views ALWAYS rebuild their #wc-*
+// containers from scratch, so we just have to (re)paint the canvas inside.
 
 // Render a single canvas word cloud inside `el` using the wordcloud2.js API.
 function _drawWordCloud(el, text){
@@ -1386,27 +1384,27 @@ function _drawWordCloud(el, text){
     el.innerHTML = '<div class="empty-state" style="border:none;background:transparent;margin:20px auto;padding:30px"><span class="big">\u00b7</span>Word cloud will appear once attendees submit.</div>';
     return;
   }
-  // Layout might not be settled yet (e.g. just after innerHTML on the parent).
-  // If the container has zero width, defer one frame so getBoundingClientRect
-  // returns the real size — otherwise the canvas is 280x200 inside a 500-wide
-  // card and looks empty / cropped.
-  const rect = el.getBoundingClientRect();
-  if(rect.width < 50){
-    requestAnimationFrame(()=>_drawWordCloud(el, text));
-    return;
-  }
+  // Use offsetWidth / offsetHeight (works even before paint, unlike
+  // getBoundingClientRect on freshly-injected nodes). Fall back to a sane
+  // default if the container hasn't laid out yet.
+  const w = el.offsetWidth  || el.clientWidth  || 480;
+  const h = el.offsetHeight || el.clientHeight || 260;
   const canvas = document.createElement('canvas');
-  canvas.width  = Math.max(280, Math.floor(rect.width));
-  canvas.height = Math.max(200, Math.floor(rect.height));
+  canvas.width  = Math.max(280, w);
+  canvas.height = Math.max(200, h);
+  canvas.style.display = 'block';
   el.innerHTML = '';
   el.appendChild(canvas);
   try{
     WordCloud(canvas, {
       list,
-      gridSize: 10,
+      gridSize: 8,
       weightFactor: function(size){
         const max = list[0][1] || 1;
-        return 14 + (size/max) * 36;
+        // Single-response sessions: every word has weight 1, scale to 28-44px
+        // so they actually appear. As more answers arrive, max grows and the
+        // range expands.
+        return 18 + (size/max) * 30;
       },
       fontFamily: 'Montserrat, sans-serif',
       color: function(w, weight){
@@ -1422,24 +1420,26 @@ function _drawWordCloud(el, text){
       minRotation: -Math.PI/8,
       maxRotation: Math.PI/8,
       shuffle: false,
-      drawOutOfBound: false
+      drawOutOfBound: false,
+      shrinkToFit: true
     });
   }catch(e){ console.warn('[ABII] wordcloud render failed:', e); }
 }
 
-// `force` skips the signature short-circuit. We pass force=true whenever the
-// caller knows the DOM was just rebuilt (renderAll replaced #mainArea), since
-// in that case the previous canvas was wiped even though the underlying text
-// is identical to the last cached signature.
-function maybeRenderWordCloud(force){
-  if(_wcGuard) return;
+// Triggered by renderAll() after #mainArea is rebuilt. No caching, no guards
+// — every renderAll repaints the cloud(s). The underlying canvas API is fast
+// enough for our scale (≤100 attendees, ≤60 unique tokens after tokenize()).
+function maybeRenderWordCloud(){
   if(document.hidden) return;
-  if(!window.WordCloud) return;
+  if(!window.WordCloud){
+    // Library still loading — try again next frame.
+    requestAnimationFrame(maybeRenderWordCloud);
+    return;
+  }
   const ia = INTERACTIONS[STATE.cur];
-  if(ia.type !== 'text' && ia.type !== 'text2' && ia.type !== 'commit') return;
+  if(!ia || (ia.type !== 'text' && ia.type !== 'text2' && ia.type !== 'commit')) return;
   const bucket = STATE.data[ia.key] || {};
 
-  // text2: two clouds (expect + difference) on the same screen.
   if(ia.type === 'text2'){
     const elE = document.getElementById('wc-container-expect');
     const elD = document.getElementById('wc-container-difference');
@@ -1450,20 +1450,11 @@ function maybeRenderWordCloud(force){
       textE += ' ' + (v.expect || v.text || '');
       textD += ' ' + (v.difference || '');
     });
-    // If either container has no canvas yet, the DOM was just rebuilt and we
-    // MUST redraw even if the signature matches the previous frame.
-    const domDirty = !elE.querySelector('canvas') || !elD.querySelector('canvas');
-    const sig = ia.key + '|2|' + textE.length + '|' + textD.length + '|' + textE.slice(0,160) + '|' + textD.slice(0,160);
-    if(!force && !domDirty && sig === _wcLastSignature) return;
-    _wcLastSignature = sig;
-    _wcGuard = true;
     _drawWordCloud(elE, textE);
     _drawWordCloud(elD, textD);
-    setTimeout(()=>{ _wcGuard = false; }, 100);
     return;
   }
 
-  // text / commit: single cloud (legacy behaviour).
   const el = document.getElementById('wc-container');
   if(!el) return;
   let text = '';
@@ -1471,13 +1462,7 @@ function maybeRenderWordCloud(force){
     if(ia.type === 'text' && v && v.text) text += ' ' + v.text;
     if(ia.type === 'commit' && v) text += ' ' + (v.stop||'') + ' ' + (v.start||'') + ' ' + (v.track||'');
   });
-  const domDirty = !el.querySelector('canvas');
-  const signature = ia.key + '|' + text.length + '|' + text.slice(0,200);
-  if(!force && !domDirty && signature === _wcLastSignature) return;
-  _wcLastSignature = signature;
-  _wcGuard = true;
   _drawWordCloud(el, text);
-  setTimeout(()=>{ _wcGuard = false; }, 100);
 }
 
 // =========================================================

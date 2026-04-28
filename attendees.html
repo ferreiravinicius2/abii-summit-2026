@@ -895,7 +895,8 @@ const INTERACTIONS = [
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
           // Color the share gap pill: red if invested far less than fair, blue if far more, neutral if close.
           const gapTone = shareDiff <= -5 ? '#f87171' : shareDiff >= 5 ? '#eab308' : '#4ade80';
-          const gapLbl  = shareDiff > 0 ? `+${shareDiff.toFixed(1)}pp over-invested` : shareDiff < 0 ? `${shareDiff.toFixed(1)}pp under-invested` : 'in line';
+          const invIndex = nrSharePct > 0 ? (invSharePct / nrSharePct) : 0;
+          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x`;
           html += `
             <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${pick?'rgba(212,168,67,.45)':'rgba(255,255,255,.08)'}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
@@ -918,7 +919,7 @@ const INTERACTIONS = [
                   <div style="font-size:10px;color:#cbd5e1">${b.smDme.toFixed(2)}M of ${totalInv.toFixed(2)}M</div>
                 </div>
               </div>
-              <div style="font-size:11px;color:${gapTone};font-weight:700;margin-bottom:10px;letter-spacing:.04em">Gap: ${gapLbl}</div>
+              <div style="font-size:11px;color:${gapTone};font-weight:700;margin-bottom:10px;letter-spacing:.04em">${gapLbl}</div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
                 ${['Increase','Decrease','Keep as is'].map(act=>{
                   const isPick = pick === act;

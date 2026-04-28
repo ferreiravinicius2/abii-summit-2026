@@ -883,21 +883,25 @@ const INTERACTIONS = [
           const pick = st.decisions[i] || null;
           const nrSharePct  = (b.nr / d.totalNR) * 100;
           const invSharePct = (b.smDme / totalInv) * 100;
-          const shareDiff   = invSharePct - nrSharePct; // >0 over-invested, <0 under-invested
-          // Correct action heuristic. Stays simple and pedagogical:
-          //  - Over-invested by 5+ pp  -> Decrease (free up $ for Mega/Expansion)
-          //  - Under-invested by 5+ pp -> Increase
-          //  - Else                    -> Keep as is
-          let correctAction;
-          if(shareDiff <= -5)      correctAction = 'Increase';
-          else if(shareDiff >= 5)  correctAction = 'Decrease';
-          else                     correctAction = 'Keep as is';
+          const invIndex    = nrSharePct > 0 ? (invSharePct / nrSharePct) : 0;
+          // Acceptable Investments Index ranges by brand role (per AB InBev DGP standard).
+          // Prefer the per-brand min/maxRatio that ships in DATA_SM; fall back to role defaults.
+          const ROLE_RANGES = {
+            'Mega Brand': [1.30, 2.50],
+            'Expansion':  [1.00, 1.29],
+            'Sustain':    [0.70, 0.99],
+            'Tail':       [0.00, 0.00]
+          };
+          const fallback = ROLE_RANGES[b.role] || [0.95, 1.05];
+          const rMin = (typeof b.minRatio === 'number') ? b.minRatio : fallback[0];
+          const rMax = (typeof b.maxRatio === 'number') ? b.maxRatio : fallback[1];
+          let correctAction, invStatus, gapTone;
+          if(invIndex < rMin)      { correctAction = 'Increase';   invStatus = 'Under-invested'; gapTone = '#f87171'; }
+          else if(invIndex > rMax) { correctAction = 'Decrease';   invStatus = 'Over-invested';  gapTone = '#eab308'; }
+          else                     { correctAction = 'Keep as is'; invStatus = 'OK';             gapTone = '#4ade80'; }
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
-          // Color the share gap pill: red if invested far less than fair, blue if far more, neutral if close.
-          const gapTone = shareDiff <= -5 ? '#f87171' : shareDiff >= 5 ? '#eab308' : '#4ade80';
-          const invIndex = nrSharePct > 0 ? (invSharePct / nrSharePct) : 0;
-          const invStatus = shareDiff <= -5 ? 'Under-invested' : shareDiff >= 5 ? 'Over-invested' : 'OK';
-          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x &nbsp;\u2022&nbsp; ${invStatus}`;
+          const rangeLbl = (b.role === 'Tail' || (rMin === 0 && rMax === 0)) ? '&rarr; 0' : `${rMin.toFixed(2)}x–${rMax.toFixed(2)}x`;
+          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x &nbsp;\u2022&nbsp; ${invStatus} &nbsp;<span style="color:#94a3b8;font-weight:600">(target ${rangeLbl})</span>`;
           html += `
             <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${pick?'rgba(212,168,67,.45)':'rgba(255,255,255,.08)'}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
@@ -963,13 +967,22 @@ const INTERACTIONS = [
         const d = DATA_SM[st.country];
         const brands = d.brands.filter(b=>b.nr>0);
         const totalInv = brands.reduce((s,b)=>s+b.smDme,0);
+        const ROLE_RANGES = {
+          'Mega Brand': [1.30, 2.50],
+          'Expansion':  [1.00, 1.29],
+          'Sustain':    [0.70, 0.99],
+          'Tail':       [0.00, 0.00]
+        };
         const decisions = brands.map((b,i)=>{
           const nrSharePct  = (b.nr / d.totalNR) * 100;
           const invSharePct = (b.smDme / totalInv) * 100;
-          const shareDiff   = invSharePct - nrSharePct;
+          const invIndex    = nrSharePct > 0 ? (invSharePct / nrSharePct) : 0;
+          const fallback = ROLE_RANGES[b.role] || [0.95, 1.05];
+          const rMin = (typeof b.minRatio === 'number') ? b.minRatio : fallback[0];
+          const rMax = (typeof b.maxRatio === 'number') ? b.maxRatio : fallback[1];
           let correctAction;
-          if(shareDiff <= -5)      correctAction = 'Increase';
-          else if(shareDiff >= 5)  correctAction = 'Decrease';
+          if(invIndex < rMin)      correctAction = 'Increase';
+          else if(invIndex > rMax) correctAction = 'Decrease';
           else                     correctAction = 'Keep as is';
           const action = st.decisions[i];
           return {

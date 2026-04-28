@@ -896,7 +896,8 @@ const INTERACTIONS = [
           // Color the share gap pill: red if invested far less than fair, blue if far more, neutral if close.
           const gapTone = shareDiff <= -5 ? '#f87171' : shareDiff >= 5 ? '#eab308' : '#4ade80';
           const invIndex = nrSharePct > 0 ? (invSharePct / nrSharePct) : 0;
-          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x`;
+          const invStatus = shareDiff <= -5 ? 'Under-invested' : shareDiff >= 5 ? 'Over-invested' : 'OK';
+          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x &nbsp;\u2022&nbsp; ${invStatus}`;
           html += `
             <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${pick?'rgba(212,168,67,.45)':'rgba(255,255,255,.08)'}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">

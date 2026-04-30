@@ -895,13 +895,16 @@ const INTERACTIONS = [
           const fallback = ROLE_RANGES[b.role] || [0.95, 1.05];
           const rMin = (typeof b.minRatio === 'number') ? b.minRatio : fallback[0];
           const rMax = (typeof b.maxRatio === 'number') ? b.maxRatio : fallback[1];
+          // Round to 1 decimal so the visible Investments Index matches the evaluation logic.
+          // Without this, a value like 1.283 would show as "1.3x" but be judged as below 1.30x.
+          const invIndexShown = Math.round(invIndex * 10) / 10;
           let correctAction, invStatus, gapTone;
-          if(invIndex < rMin)      { correctAction = 'Increase';   invStatus = 'Under-invested'; gapTone = '#f87171'; }
-          else if(invIndex > rMax) { correctAction = 'Decrease';   invStatus = 'Over-invested';  gapTone = '#eab308'; }
-          else                     { correctAction = 'Keep as is'; invStatus = 'OK';             gapTone = '#4ade80'; }
+          if(invIndexShown < rMin)      { correctAction = 'Increase';   invStatus = 'Under-invested'; gapTone = '#f87171'; }
+          else if(invIndexShown > rMax) { correctAction = 'Decrease';   invStatus = 'Over-invested';  gapTone = '#eab308'; }
+          else                          { correctAction = 'Keep as is'; invStatus = 'OK';             gapTone = '#4ade80'; }
           const roleCol = b.role==='Mega Brand'?'var(--gold)':b.role==='Expansion'?'#60a5fa':b.role==='Sustain'?'#888':'#f87171';
           const rangeLbl = (b.role === 'Tail' || (rMin === 0 && rMax === 0)) ? '&rarr; 0' : `${rMin.toFixed(2)}x–${rMax.toFixed(2)}x`;
-          const gapLbl  = `Investments Index = ${invIndex.toFixed(1)}x &nbsp;\u2022&nbsp; ${invStatus} &nbsp;<span style="color:#94a3b8;font-weight:600">(target ${rangeLbl})</span>`;
+          const gapLbl  = `Investments Index = ${invIndexShown.toFixed(1)}x &nbsp;\u2022&nbsp; ${invStatus} &nbsp;<span style="color:#94a3b8;font-weight:600">(target ${rangeLbl})</span>`;
           html += `
             <div class="card" style="padding:14px 14px;margin-bottom:10px;border-color:${pick?'rgba(212,168,67,.45)':'rgba(255,255,255,.08)'}">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
@@ -980,10 +983,13 @@ const INTERACTIONS = [
           const fallback = ROLE_RANGES[b.role] || [0.95, 1.05];
           const rMin = (typeof b.minRatio === 'number') ? b.minRatio : fallback[0];
           const rMax = (typeof b.maxRatio === 'number') ? b.maxRatio : fallback[1];
+          // Match the displayed (1-decimal) value used in the prompt to avoid
+          // ambiguity at the boundary (e.g. shown 1.3x but raw 1.283x).
+          const invIndexShown = Math.round(invIndex * 10) / 10;
           let correctAction;
-          if(invIndex < rMin)      correctAction = 'Increase';
-          else if(invIndex > rMax) correctAction = 'Decrease';
-          else                     correctAction = 'Keep as is';
+          if(invIndexShown < rMin)      correctAction = 'Increase';
+          else if(invIndexShown > rMax) correctAction = 'Decrease';
+          else                          correctAction = 'Keep as is';
           const action = st.decisions[i];
           return {
             brand: b.brand, role: b.role,
